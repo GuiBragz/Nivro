@@ -1,0 +1,107 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- ENUMS ---
+
+enum UserStatus {
+  ACTIVE
+  BLOCKED
+  PENDING
+}
+
+enum AccountType {
+  CHECKING
+  CREDIT
+  INVESTMENT
+  WALLET
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+  TRANSFER
+}
+
+// --- MODELS ---
+
+model User {
+  id            String       @id @default(uuid())
+  email         String       @unique
+  password_hash String
+  cpf           String       @unique
+  phone         String       @unique
+  status        UserStatus   @default(ACTIVE)
+  created_at    DateTime     @default(now())
+  updated_at    DateTime     @updatedAt
+  
+  profile       UserProfile?
+  accounts      Account[]
+  transactions  Transaction[]
+  categories    Category[]
+  tags          Tag[]
+}
+
+model UserProfile {
+  user_id    String   @id
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  full_name  String
+  birth_date DateTime
+  avatar_url String?
+}
+
+model Account {
+  id               String      @id @default(uuid())
+  user_id          String
+  user             User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  type             AccountType
+  institution_name String
+  balance          Decimal     @default(0)
+  credit_limit     Decimal?
+  closing_day      Int?
+  due_day          Int?
+  transactions     Transaction[]
+}
+
+model Category {
+  id           String          @id @default(uuid())
+  user_id      String
+  user         User            @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  name         String
+  type         TransactionType
+  icon_name    String?
+  transactions Transaction[]
+
+  @@unique([user_id, name])
+}
+
+model Transaction {
+  id          String          @id @default(uuid())
+  user_id     String
+  user        User            @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  account_id  String
+  account     Account         @relation(fields: [account_id], references: [id])
+  category_id String?
+  category    Category?       @relation(fields: [category_id], references: [id], onDelete: SetNull)
+  
+  amount      Decimal
+  description String
+  type        TransactionType
+  executed_at DateTime
+  tags        Tag[]           // N:N implícito do Prisma
+  created_at  DateTime        @default(now())
+}
+
+model Tag {
+  id           String        @id @default(uuid())
+  user_id      String
+  user         User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  name         String
+  color_hex    String
+  transactions Transaction[]
+}
