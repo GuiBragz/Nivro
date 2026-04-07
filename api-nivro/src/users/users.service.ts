@@ -40,8 +40,9 @@ export class UsersService {
       });
 
       // Remove a senha do retorno por segurança
-      delete user.password_hash;
-      return user;
+      // Remove a senha do retorno criando um novo objeto sem ela
+      const { password_hash, ...userWithoutPassword } = user;
+      return userWithoutPassword;
     });
   }
 }
