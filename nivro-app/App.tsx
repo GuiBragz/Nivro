@@ -1,44 +1,26 @@
 import React from "react";
-import { StatusBar } from "react-native";
+import { StatusBar, View } from "react-native";
+import { NavigationContainer } from "@react-navigation/native";
+
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
-import { Login } from "./src/screens/Login";
-import { View, Text, TouchableOpacity } from "react-native";
+import { AppRoutes } from "./src/routes/app.routes";
+import { AuthRoutes } from "./src/routes/auth.routes"; // <-- Faltava esse cara!
 
-// Uma Home provisória só para testarmos o fluxo
-function HomeProvisoria() {
-  const { signOut } = useAuth();
-
-  return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "#121214",
-      }}
-    >
-      <Text style={{ color: "#FFF", fontSize: 24, marginBottom: 20 }}>
-        Bem-vindo ao Nivro!
-      </Text>
-      <TouchableOpacity
-        onPress={signOut}
-        style={{ padding: 16, backgroundColor: "#F75A68", borderRadius: 8 }}
-      >
-        <Text style={{ color: "#FFF", fontWeight: "bold" }}>Sair</Text>
-      </TouchableOpacity>
-    </View>
-  );
-}
-
-// O componente que decide qual tela renderizar
+// O componente que decide qual fluxo de navegação mostrar
 function Routes() {
   const { signed, loading } = useAuth();
 
+  // Enquanto o app checa o token no SecureStore, mostramos uma tela vazia
   if (loading) {
-    return <View style={{ flex: 1, backgroundColor: "#121214" }} />; // Tela preta enquanto carrega o token
+    return <View style={{ flex: 1, backgroundColor: "#121214" }} />;
   }
 
-  return signed ? <HomeProvisoria /> : <Login />;
+  return (
+    <NavigationContainer>
+      {/* Se estiver logado, AppRoutes (Tabs). Se não, AuthRoutes (Stack) */}
+      {signed ? <AppRoutes /> : <AuthRoutes />}
+    </NavigationContainer>
+  );
 }
 
 export default function App() {

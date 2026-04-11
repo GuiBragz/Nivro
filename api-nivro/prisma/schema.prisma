@@ -31,20 +31,24 @@ enum TransactionType {
 // --- MODELS ---
 
 model User {
-  id            String       @id @default(uuid())
-  email         String       @unique
-  password_hash String
-  cpf           String       @unique
-  phone         String       @unique
-  status        UserStatus   @default(ACTIVE)
-  created_at    DateTime     @default(now())
-  updated_at    DateTime     @updatedAt
+  id                     String        @id @default(uuid())
+  email                  String        @unique
+  password_hash          String
+  cpf                    String        @unique
+  phone                  String        @unique
+  status                 UserStatus    @default(ACTIVE)
+  created_at             DateTime      @default(now())
+  updated_at             DateTime      @updatedAt
   
-  profile       UserProfile?
-  accounts      Account[]
-  transactions  Transaction[]
-  categories    Category[]
-  tags          Tag[]
+  // --- CAMPOS NOVOS PARA RECUPERAÇÃO DE SENHA ---
+  reset_password_token   String?
+  reset_password_expires DateTime?
+
+  profile                UserProfile?
+  accounts               Account[]
+  transactions           Transaction[]
+  categories             Category[]
+  tags                   Tag[]
 }
 
 model UserProfile {
@@ -56,12 +60,12 @@ model UserProfile {
 }
 
 model Account {
-  id               String      @id @default(uuid())
+  id               String        @id @default(uuid())
   user_id          String
-  user             User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user             User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
   type             AccountType
   institution_name String
-  balance          Decimal     @default(0)
+  balance          Decimal       @default(0)
   credit_limit     Decimal?
   closing_day      Int?
   due_day          Int?
@@ -98,9 +102,9 @@ model Transaction {
 }
 
 model Tag {
-  id           String        @id @default(uuid())
+  id           String          @id @default(uuid())
   user_id      String
-  user         User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user         User            @relation(fields: [user_id], references: [id], onDelete: Cascade)
   name         String
   color_hex    String
   transactions Transaction[]

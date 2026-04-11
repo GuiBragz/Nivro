@@ -18,17 +18,17 @@ let UsersService = class UsersService {
         this.prisma = prisma;
     }
     async create(data) {
-        // 1. Verificar se E-mail ou CPF já existem (Segurança de duplicidade)
+        // 1. Verificar se E-mail ou CPF já existem
         const userExists = await this.prisma.user.findFirst({
             where: { OR: [{ email: data.email }, { cpf: data.cpf }] },
         });
         if (userExists) {
             throw new common_1.BadRequestException("E-mail ou CPF já cadastrados no sistema.");
         }
-        // 2. Criptografar a senha (Hash)
+        // 2. Criptografar a senha
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(data.password, salt);
-        // 3. Salvar no Supabase (Transaction para garantir que User e Profile sejam criados juntos)
+        // 3. Salvar no Supabase via Transaction
         return this.prisma.$transaction(async (tx) => {
             const user = await tx.user.create({
                 data: {
@@ -45,11 +45,42 @@ let UsersService = class UsersService {
                 },
                 include: { profile: true },
             });
-            // Remove a senha do retorno por segurança
-            // Remove a senha do retorno criando um novo objeto sem ela
             const { password_hash, ...userWithoutPassword } = user;
             return userWithoutPassword;
         });
+    }
+    // --- MÉTODOS NOVOS ---
+    async getProfile(userId) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            include: { profile: true },
+        });
+        if (!user) {
+            throw new common_1.NotFoundException("Usuário não encontrado.");
+        }
+        const { password_hash, ...userWithoutPassword } = user;
+        return userWithoutPassword;
+    }
+    async updateProfile(userId, data) {
+        const { full_name, birth_date, avatar_url, phone } = data;
+        const updatedUser = await this.prisma.user.update({
+            where: { id: userId },
+            data: {
+                // Atualiza campos de User (se fornecidos)
+                ...(phone && { phone }),
+                // Atualiza campos de UserProfile (se fornecidos)
+                profile: {
+                    update: {
+                        ...(full_name && { full_name }),
+                        ...(birth_date && { birth_date: new Date(birth_date) }),
+                        ...(avatar_url && { avatar_url }),
+                    },
+                },
+            },
+            include: { profile: true },
+        });
+        const { password_hash, ...userWithoutPassword } = updatedUser;
+        return userWithoutPassword;
     }
 };
 exports.UsersService = UsersService;

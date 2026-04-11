@@ -15,12 +15,20 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
 const common_1 = require("@nestjs/common");
 const auth_service_1 = require("./auth.service");
+const recovery_dto_1 = require("./dto/recovery.dto");
 let AuthController = class AuthController {
     constructor(authService) {
         this.authService = authService;
     }
-    async login(body) {
+    signIn(body) {
         return this.authService.login(body.email, body.password);
+    }
+    // 👇 Novas rotas abaixo 👇
+    async forgotPassword(dto) {
+        return this.authService.forgotPassword(dto.email);
+    }
+    async resetPassword(dto) {
+        return this.authService.resetPassword(dto.email, dto.token, dto.new_password);
     }
 };
 exports.AuthController = AuthController;
@@ -30,8 +38,26 @@ __decorate([
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "signIn", null);
+__decorate([
+    (0, common_1.Post)("forgot-password"),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, common_1.UsePipes)(new common_1.ValidationPipe()),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [recovery_dto_1.ForgotPasswordDto]),
     __metadata("design:returntype", Promise)
-], AuthController.prototype, "login", null);
+], AuthController.prototype, "forgotPassword", null);
+__decorate([
+    (0, common_1.Post)("reset-password"),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, common_1.UsePipes)(new common_1.ValidationPipe()),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [recovery_dto_1.ResetPasswordDto]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "resetPassword", null);
 exports.AuthController = AuthController = __decorate([
     (0, common_1.Controller)("auth"),
     __metadata("design:paramtypes", [auth_service_1.AuthService])

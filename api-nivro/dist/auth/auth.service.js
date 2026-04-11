@@ -20,25 +20,77 @@ let AuthService = class AuthService {
         this.jwtService = jwtService;
     }
     async login(email, pass) {
-        // 1. Busca o usuário
         const user = await this.prisma.user.findUnique({ where: { email } });
         if (!user) {
-            throw new common_1.UnauthorizedException("Credenciais inválidas");
+            throw new common_1.UnauthorizedException("E-mail ou senha incorretos.");
         }
-        // 2. Compara a senha digitada com a hash do banco
-        const isPasswordValid = await bcrypt.compare(pass, user.password_hash);
-        if (!isPasswordValid) {
-            throw new common_1.UnauthorizedException("Credenciais inválidas");
+        const isMatch = await bcrypt.compare(pass, user.password_hash);
+        if (!isMatch) {
+            throw new common_1.UnauthorizedException("E-mail ou senha incorretos.");
         }
-        // 3. Gera o payload e assina o token
         const payload = { email: user.email, sub: user.id };
         return {
             access_token: this.jwtService.sign(payload),
-            user: {
-                id: user.id,
-                email: user.email,
-            },
+            user: { id: user.id, email: user.email },
         };
+    }
+    // --- LÓGICA DE RECUPERAÇÃO DE SENHA ---
+    async forgotPassword(email) {
+        const user = await this.prisma.user.findUnique({ where: { email } });
+        // Por segurança, não estouramos erro se o e-mail não existir para evitar que hackers
+        // descubram quem tem conta no app. Apenas fingimos que enviou.
+        if (!user) {
+            return {
+                message: "Se o e-mail estiver cadastrado, as instruções foram enviadas.",
+            };
+        }
+        // Gera um código de 6 dígitos aleatório (Ex: "582094")
+        const recoveryCode = Math.floor(100000 + Math.random() * 900000).toString();
+        // Define a validade para 1 hora a partir de agora
+        const expiresIn = new Date();
+        expiresIn.setHours(expiresIn.getHours() + 1);
+        // Salva no banco de dados
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                reset_password_token: recoveryCode,
+                reset_password_expires: expiresIn,
+            },
+        });
+        // Como não temos um serviço de disparo de e-mail (como AWS SES ou SendGrid),
+        // vamos imprimir no terminal para podermos testar.
+        console.log(`\n📧 [E-MAIL FAKE] -> Para: ${email}`);
+        console.log(`🔑 Assunto: Recuperação de Senha`);
+        console.log(`Seu código de verificação é: [ ${recoveryCode} ]\n`);
+        return {
+            message: "Se o e-mail estiver cadastrado, as instruções foram enviadas.",
+        };
+    }
+    async resetPassword(email, token, new_password) {
+        const user = await this.prisma.user.findUnique({ where: { email } });
+        if (!user)
+            throw new common_1.BadRequestException("Usuário ou código inválido.");
+        // Verifica se o código bate e se ainda não expirou
+        if (user.reset_password_token !== token) {
+            throw new common_1.BadRequestException("Código de recuperação inválido.");
+        }
+        if (!user.reset_password_expires ||
+            user.reset_password_expires < new Date()) {
+            throw new common_1.BadRequestException("O código de recuperação expirou. Solicite um novo.");
+        }
+        // Criptografa a nova senha
+        const salt = await bcrypt.genSalt(10);
+        const newHashedPassword = await bcrypt.hash(new_password, salt);
+        // Atualiza a senha e limpa os campos de recuperação para invalidar o código usado
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                password_hash: newHashedPassword,
+                reset_password_token: null,
+                reset_password_expires: null,
+            },
+        });
+        return { message: "Senha alterada com sucesso! Você já pode fazer login." };
     }
 };
 exports.AuthService = AuthService;

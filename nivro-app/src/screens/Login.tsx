@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
+import { useNavigation } from "@react-navigation/native"; // 👈 Adicionamos a navegação
 import { useAuth } from "../contexts/AuthContext";
 
 export function Login() {
@@ -16,6 +17,7 @@ export function Login() {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const { signIn } = useAuth();
+  const navigation = useNavigation<any>(); // 👈 Inicializamos a navegação
 
   async function handleLogin() {
     if (!email || !password) {
@@ -71,6 +73,21 @@ export function Login() {
             <Text style={styles.buttonText}>Entrar</Text>
           )}
         </TouchableOpacity>
+
+        {/* 👇 Novos botões de navegação 👇 */}
+        <TouchableOpacity onPress={() => navigation.navigate("forgotPassword")}>
+          <Text style={styles.forgotPasswordText}>Esqueci minha senha</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.registerContainer}
+          onPress={() => navigation.navigate("register")}
+        >
+          <Text style={styles.registerText}>
+            Ainda não tem conta?{" "}
+            <Text style={styles.registerTextBold}>Cadastre-se</Text>
+          </Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -79,7 +96,7 @@ export function Login() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#121214", // Tema Dark por padrão, claro!
+    backgroundColor: "#121214",
     justifyContent: "center",
     padding: 32,
   },
@@ -87,7 +104,7 @@ const styles = StyleSheet.create({
     marginBottom: 48,
   },
   title: {
-    color: "#00B37E", // Verde financeiro
+    color: "#00B37E",
     fontSize: 48,
     fontWeight: "bold",
     marginBottom: 8,
@@ -97,7 +114,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   form: {
-    gap: 16, // Espaçamento automático entre os inputs
+    gap: 16,
   },
   input: {
     backgroundColor: "#202024",
@@ -118,6 +135,25 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "#FFF",
     fontSize: 16,
+    fontWeight: "bold",
+  },
+  forgotPasswordText: {
+    color: "#00B37E",
+    textAlign: "center",
+    marginTop: 8,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  registerContainer: {
+    marginTop: 24,
+    alignItems: "center",
+  },
+  registerText: {
+    color: "#8D8D99",
+    fontSize: 14,
+  },
+  registerTextBold: {
+    color: "#FFF",
     fontWeight: "bold",
   },
 });
