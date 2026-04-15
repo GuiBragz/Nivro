@@ -9,6 +9,8 @@ import {
   ScrollView,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Feather } from "@expo/vector-icons";
 import { api } from "../api/api";
 
 export function NewTransaction() {
@@ -16,6 +18,7 @@ export function NewTransaction() {
   const [type, setType] = useState<"INCOME" | "EXPENSE">("EXPENSE");
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
+  const [loading, setLoading] = useState(false);
 
   async function handleSave() {
     if (!description || !amount) {
@@ -23,89 +26,136 @@ export function NewTransaction() {
     }
 
     try {
-      // No mundo real, aqui buscaríamos o ID da conta padrão do usuário
-      // Para o teste, vamos assumir que ele tem uma conta (usando a lógica do back)
+      setLoading(true);
       const accounts = await api.get("/accounts");
       if (accounts.data.length === 0) {
-        return Alert.alert(
+        Alert.alert(
           "Erro",
           "Você precisa cadastrar uma conta bancária primeiro.",
         );
+        setLoading(false);
+        return;
       }
 
       await api.post("/transactions", {
         description,
         amount: Number(amount.replace(",", ".")),
         type,
-        account_id: accounts.data[0].id, // Pega a primeira conta
+        account_id: accounts.data[0].id,
         executed_at: new Date().toISOString(),
       });
 
-      Alert.alert("Sucesso", "Transação registrada!");
-      navigation.goBack(); // Volta para a Home
+      navigation.goBack();
     } catch (error) {
       console.error(error);
       Alert.alert("Erro", "Não foi possível salvar a transação.");
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.cancelText}>Cancelar</Text>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backBtn}
+        >
+          <Feather name="x" size={24} color="#E8EDF5" />
         </TouchableOpacity>
         <Text style={styles.title}>Nova Transação</Text>
-        <View style={{ width: 60 }} />
-      </View>
-
-      <View style={styles.typeContainer}>
-        <TouchableOpacity
-          style={[styles.typeButton, type === "INCOME" && styles.incomeActive]}
-          onPress={() => setType("INCOME")}
-        >
-          <Text
-            style={[styles.typeText, type === "INCOME" && { color: "#FFF" }]}
-          >
-            Receita
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.typeButton,
-            type === "EXPENSE" && styles.expenseActive,
-          ]}
-          onPress={() => setType("EXPENSE")}
-        >
-          <Text
-            style={[styles.typeText, type === "EXPENSE" && { color: "#FFF" }]}
-          >
-            Despesa
-          </Text>
-        </TouchableOpacity>
+        <View style={{ width: 40 }} />
       </View>
 
       <View style={styles.form}>
-        <Text style={styles.label}>Quanto?</Text>
-        <TextInput
-          style={styles.amountInput}
-          placeholder="R$ 0,00"
-          placeholderTextColor="#8D8D99"
-          keyboardType="numeric"
-          onChangeText={setAmount}
-        />
+        {/* Toggle Receita / Despesa */}
+        <View style={styles.typeToggle}>
+          <TouchableOpacity
+            style={[styles.typeBtn, type === "INCOME" && styles.typeBtnInc]}
+            onPress={() => setType("INCOME")}
+            activeOpacity={0.8}
+          >
+            <Feather
+              name="arrow-up"
+              size={16}
+              color={type === "INCOME" ? "#00B37E" : "rgba(232,237,245,0.55)"}
+            />
+            <Text
+              style={[
+                styles.typeBtnText,
+                type === "INCOME" && { color: "#00B37E" },
+              ]}
+            >
+              Receita
+            </Text>
+          </TouchableOpacity>
 
-        <Text style={styles.label}>O que é?</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Ex: Aluguel, Salário, Lanche..."
-          placeholderTextColor="#8D8D99"
-          onChangeText={setDescription}
-        />
+          <TouchableOpacity
+            style={[styles.typeBtn, type === "EXPENSE" && styles.typeBtnExp]}
+            onPress={() => setType("EXPENSE")}
+            activeOpacity={0.8}
+          >
+            <Feather
+              name="arrow-down"
+              size={16}
+              color={type === "EXPENSE" ? "#F75A68" : "rgba(232,237,245,0.55)"}
+            />
+            <Text
+              style={[
+                styles.typeBtnText,
+                type === "EXPENSE" && { color: "#F75A68" },
+              ]}
+            >
+              Despesa
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>Salvar Transação</Text>
+        {/* Input Valor */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>VALOR</Text>
+          <View style={styles.amountContainer}>
+            <Text style={styles.currencySymbol}>R$</Text>
+            <TextInput
+              style={styles.amountInput}
+              placeholder="0.00"
+              placeholderTextColor="rgba(232,237,245,0.3)"
+              keyboardType="numeric"
+              value={amount}
+              onChangeText={setAmount}
+            />
+          </View>
+        </View>
+
+        {/* Input Descrição */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>DESCRIÇÃO</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Ex: Supermercado, Salário..."
+            placeholderTextColor="rgba(232,237,245,0.3)"
+            value={description}
+            onChangeText={setDescription}
+          />
+        </View>
+
+        {/* Botão de Salvar com Gradiente */}
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={handleSave}
+          disabled={loading}
+          style={{ marginTop: 24 }}
+        >
+          <LinearGradient
+            colors={["#00B37E", "#00D496"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.saveBtn}
+          >
+            <Text style={styles.saveBtnText}>
+              {loading ? "Salvando..." : "Salvar Transação"}
+            </Text>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -113,57 +163,105 @@ export function NewTransaction() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#121214" },
+  container: { flex: 1, backgroundColor: "#0D1017" },
+  content: { paddingBottom: 40 },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    padding: 24,
+    alignItems: "center",
+    paddingHorizontal: 24,
     paddingTop: 60,
-    alignItems: "center",
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.04)",
   },
-  cancelText: { color: "#F75A68", fontSize: 16 },
-  title: { color: "#FFF", fontSize: 18, fontWeight: "bold" },
-  typeContainer: {
-    flexDirection: "row",
-    padding: 24,
-    gap: 12,
-  },
-  typeButton: {
-    flex: 1,
-    height: 50,
-    borderRadius: 8,
-    backgroundColor: "#29292E",
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.05)",
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#323238",
   },
-  typeText: { color: "#8D8D99", fontWeight: "bold" },
-  incomeActive: { backgroundColor: "#00B37E", borderColor: "#00B37E" },
-  expenseActive: { backgroundColor: "#F75A68", borderColor: "#F75A68" },
+  title: { color: "#E8EDF5", fontSize: 18, fontFamily: "DMSans_700Bold" },
   form: { padding: 24 },
-  label: { color: "#8D8D99", marginBottom: 8, fontSize: 14 },
+
+  typeToggle: { flexDirection: "row", gap: 12, marginBottom: 32 },
+  typeBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.07)",
+    backgroundColor: "transparent",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  typeBtnInc: {
+    backgroundColor: "rgba(0,179,126,0.12)",
+    borderColor: "#00B37E",
+  },
+  typeBtnExp: {
+    backgroundColor: "rgba(247,90,104,0.12)",
+    borderColor: "#F75A68",
+  },
+  typeBtnText: {
+    color: "rgba(232,237,245,0.55)",
+    fontSize: 14,
+    fontFamily: "DMSans_700Bold",
+  },
+
+  inputGroup: { marginBottom: 24 },
+  inputLabel: {
+    fontSize: 12,
+    color: "rgba(232,237,245,0.55)",
+    fontFamily: "DMSans_700Bold",
+    marginBottom: 8,
+    letterSpacing: 0.5,
+  },
+
+  amountContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#131820",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.07)",
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    height: 64,
+  },
+  currencySymbol: {
+    fontSize: 20,
+    color: "rgba(232,237,245,0.55)",
+    fontFamily: "JetBrainsMono_700Bold",
+    marginRight: 8,
+  },
   amountInput: {
-    color: "#FFF",
-    fontSize: 40,
-    fontWeight: "bold",
-    marginBottom: 24,
+    flex: 1,
+    color: "#E8EDF5",
+    fontSize: 28,
+    fontFamily: "JetBrainsMono_700Bold",
   },
+
   input: {
-    backgroundColor: "#202024",
-    color: "#FFF",
-    padding: 16,
-    borderRadius: 8,
-    fontSize: 16,
-    marginBottom: 24,
-  },
-  saveButton: {
-    backgroundColor: "#00B37E",
     height: 56,
-    borderRadius: 8,
+    backgroundColor: "#131820",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.07)",
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    fontSize: 15,
+    color: "#E8EDF5",
+    fontFamily: "DMSans_400Regular",
+  },
+
+  saveBtn: {
+    height: 56,
+    borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 10,
   },
-  saveButtonText: { color: "#FFF", fontSize: 16, fontWeight: "bold" },
+  saveBtnText: { color: "#000", fontSize: 16, fontFamily: "DMSans_700Bold" },
 });

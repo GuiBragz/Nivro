@@ -7,6 +7,7 @@ import {
 import { JwtService } from "@nestjs/jwt";
 import { PrismaService } from "../prisma.service";
 import * as bcrypt from "bcrypt";
+import * as nodemailer from "nodemailer";
 
 @Injectable()
 export class AuthService {
@@ -39,8 +40,6 @@ export class AuthService {
   async forgotPassword(email: string) {
     const user = await this.prisma.user.findUnique({ where: { email } });
 
-    // Por segurança, não estouramos erro se o e-mail não existir para evitar que hackers
-    // descubram quem tem conta no app. Apenas fingimos que enviou.
     if (!user) {
       return {
         message:
@@ -48,14 +47,10 @@ export class AuthService {
       };
     }
 
-    // Gera um código de 6 dígitos aleatório (Ex: "582094")
     const recoveryCode = Math.floor(100000 + Math.random() * 900000).toString();
-
-    // Define a validade para 1 hora a partir de agora
     const expiresIn = new Date();
     expiresIn.setHours(expiresIn.getHours() + 1);
 
-    // Salva no banco de dados
     await this.prisma.user.update({
       where: { id: user.id },
       data: {
@@ -64,11 +59,40 @@ export class AuthService {
       },
     });
 
-    // Como não temos um serviço de disparo de e-mail (como AWS SES ou SendGrid),
-    // vamos imprimir no terminal para podermos testar.
-    console.log(`\n📧 [E-MAIL FAKE] -> Para: ${email}`);
-    console.log(`🔑 Assunto: Recuperação de Senha`);
-    console.log(`Seu código de verificação é: [ ${recoveryCode} ]\n`);
+    // --- DISPARO REAL DO E-MAIL VIA RESEND ---
+
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT),
+      secure: process.env.SMTP_SECURE === "true",
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
+
+    try {
+      await transporter.sendMail({
+        // Se ainda não verificou um domínio no Resend, use onboarding@resend.dev
+        from: '"Equipe Nivro" <onboarding@resend.dev>',
+        to: email,
+        subject: "Recuperação de Senha - Nivro 🔑",
+        text: `Seu código de verificação é: ${recoveryCode}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; padding: 20px; color: #121214; background-color: #f4f4f5; border-radius: 8px;">
+            <h2 style="color: #00B37E;">Nivro</h2>
+            <h3>Recuperação de Senha</h3>
+            <p>Você solicitou a recuperação de senha no aplicativo.</p>
+            <p>Seu código de verificação é:</p>
+            <h1 style="color: #00B37E; letter-spacing: 5px; background: #fff; padding: 10px; border-radius: 8px; display: inline-block;">${recoveryCode}</h1>
+            <p style="color: #8D8D99; font-size: 12px; margin-top: 20px;">Este código expira em 1 hora.</p>
+          </div>
+        `,
+      });
+      console.log(`✅ E-mail real enviado com sucesso para ${email}!`);
+    } catch (error) {
+      console.error("❌ Erro ao enviar o e-mail:", error);
+    }
 
     return {
       message: "Se o e-mail estiver cadastrado, as instruções foram enviadas.",
@@ -80,7 +104,6 @@ export class AuthService {
 
     if (!user) throw new BadRequestException("Usuário ou código inválido.");
 
-    // Verifica se o código bate e se ainda não expirou
     if (user.reset_password_token !== token) {
       throw new BadRequestException("Código de recuperação inválido.");
     }
@@ -94,11 +117,9 @@ export class AuthService {
       );
     }
 
-    // Criptografa a nova senha
     const salt = await bcrypt.genSalt(10);
     const newHashedPassword = await bcrypt.hash(new_password, salt);
 
-    // Atualiza a senha e limpa os campos de recuperação para invalidar o código usado
     await this.prisma.user.update({
       where: { id: user.id },
       data: {
