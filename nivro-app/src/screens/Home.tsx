@@ -11,10 +11,10 @@ import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 import { api } from "../api/api";
-import { useAuth } from "../contexts/AuthContext"; // 👈 Importamos o contexto para pegar o usuário
+import { useAuth } from "../contexts/AuthContext";
 
 export function Home() {
-  const { user } = useAuth(); // 👈 Pegamos o usuário logado
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [account, setAccount] = useState<any>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -28,7 +28,6 @@ export function Home() {
         api.get("/transactions/dashboard"),
       ]);
 
-      // Pega a primeira conta (ou a conta principal do usuário)
       if (accRes.data.length > 0) setAccount(accRes.data[0]);
       setTransactions(txRes.data);
     } catch (error) {
@@ -44,7 +43,6 @@ export function Home() {
     }, []),
   );
 
-  // 🧮 1. Cálculos de Receitas, Despesas e Poupança
   const incomeTotal = transactions
     .filter((t) => t.type === "INCOME")
     .reduce((acc, curr) => acc + Number(curr.amount), 0);
@@ -57,14 +55,11 @@ export function Home() {
   const taxaPoupanca =
     incomeTotal > 0 ? Math.round((poupancaTotal / incomeTotal) * 100) : 0;
 
-  // 🌅 2. Lógica de Saudação Dinâmica
   const currentHour = new Date().getHours();
   let greetingTime = "Boa noite";
   if (currentHour < 12) greetingTime = "Bom dia";
   else if (currentHour < 18) greetingTime = "Boa tarde";
 
-  // 👤 3. Tratamento do Nome do Usuário
-  // Tenta pegar o nome, se não tiver, usa o começo do e-mail
   const firstName =
     user?.full_name?.split(" ")[0] ||
     user?.name?.split(" ")[0] ||
@@ -86,7 +81,6 @@ export function Home() {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      {/* HEADER DINÂMICO */}
       <View style={styles.headerRow}>
         <View>
           <Text style={styles.greeting}>{greetingTime} 👋</Text>
@@ -103,7 +97,6 @@ export function Home() {
         </View>
       </View>
 
-      {/* BALANCE CARD */}
       <LinearGradient
         colors={["#0D2A1F", "#0A1F18", "#081510"]}
         style={styles.balanceCard}
@@ -116,7 +109,6 @@ export function Home() {
           }).format(account ? Number(account.balance) : 0)}
         </Text>
 
-        {/* Mostra se a poupança do mês está positiva ou negativa no card principal */}
         <Text
           style={[
             styles.balChange,
@@ -143,7 +135,7 @@ export function Home() {
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.balBtn, styles.balBtnPrimary]}
-            onPress={() => navigation.navigate("NewAccount")} // Linkei para criar conta por enquanto
+            onPress={() => navigation.navigate("NewAccount")}
           >
             <Feather name="plus-circle" size={14} color="#000" />
             <Text style={[styles.balBtnText, { color: "#000" }]}>
@@ -153,7 +145,6 @@ export function Home() {
         </View>
       </LinearGradient>
 
-      {/* QUICK STATS */}
       <View style={styles.quickStats}>
         <View style={styles.statCard}>
           <View
@@ -191,7 +182,6 @@ export function Home() {
         </View>
       </View>
 
-      {/* TRANSACTIONS SECTION */}
       <View style={styles.secHeader}>
         <Text style={styles.secTitle}>Últimas Transações</Text>
         <TouchableOpacity onPress={() => navigation.navigate("Transactions")}>
@@ -246,34 +236,57 @@ export function Home() {
         )}
       </View>
 
-      {/* HEALTH SCORE (DINÂMICO) */}
       <View style={[styles.secHeader, { marginTop: 8 }]}>
         <Text style={styles.secTitle}>Saúde Financeira</Text>
       </View>
       <View style={styles.scoreRow}>
         <View style={styles.scoreCard}>
-          <Text style={[styles.scoreNum, { color: "#00B37E" }]}>
-            {taxaPoupanca > 20 ? "Ótimo" : taxaPoupanca > 0 ? "Bom" : "Atenção"}
+          <Text
+            style={[
+              styles.scoreNum,
+              { color: taxaPoupanca > 0 ? "#00B37E" : "#F75A68", fontSize: 16 },
+            ]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+          >
+            {taxaPoupanca > 20 ? "Ótimo" : taxaPoupanca > 0 ? "Bom" : "Alerta"}
           </Text>
-          <Text style={styles.scoreLbl}>Status Geral</Text>
-        </View>
-        <View style={styles.scoreCard}>
-          <Text style={[styles.scoreNum, { color: "#F7C948", fontSize: 18 }]}>
-            {poupancaTotal > 0
-              ? `+ R$ ${poupancaTotal}`
-              : `R$ ${poupancaTotal}`}
+          <Text style={styles.scoreLbl} numberOfLines={1}>
+            Status
           </Text>
-          <Text style={styles.scoreLbl}>Poupança Mês</Text>
         </View>
+
         <View style={styles.scoreCard}>
-          <Text style={[styles.scoreNum, { color: "#3B82F6" }]}>
+          <Text
+            style={[styles.scoreNum, { color: "#F7C948", fontSize: 14 }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+          >
+            {poupancaTotal > 0 ? "+" : ""}
+            {new Intl.NumberFormat("pt-BR", {
+              style: "currency",
+              currency: "BRL",
+            }).format(poupancaTotal)}
+          </Text>
+          <Text style={styles.scoreLbl} numberOfLines={1}>
+            Poupança
+          </Text>
+        </View>
+
+        <View style={styles.scoreCard}>
+          <Text
+            style={[styles.scoreNum, { color: "#3B82F6", fontSize: 18 }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+          >
             {taxaPoupanca}%
           </Text>
-          <Text style={styles.scoreLbl}>Taxa Poup.</Text>
+          <Text style={styles.scoreLbl} numberOfLines={1}>
+            Taxa
+          </Text>
         </View>
       </View>
 
-      {/* Espaçamento para a Bottom Bar */}
       <View style={{ height: 120 }} />
     </ScrollView>
   );
@@ -288,8 +301,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
-  // Header
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -342,8 +353,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   avatarText: { color: "#00B37E", fontFamily: "DMSans_700Bold", fontSize: 14 },
-
-  // Balance Card
   balanceCard: {
     marginHorizontal: 20,
     marginTop: 16,
@@ -383,8 +392,6 @@ const styles = StyleSheet.create({
   },
   balBtnPrimary: { backgroundColor: "#00B37E", borderColor: "#00B37E" },
   balBtnText: { fontSize: 12, color: "#E8EDF5", fontFamily: "DMSans_700Bold" },
-
-  // Quick Stats
   quickStats: {
     flexDirection: "row",
     gap: 12,
@@ -414,8 +421,6 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans_400Regular",
     marginTop: 2,
   },
-
-  // Sections
   secHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -432,8 +437,6 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans_400Regular",
     padding: 20,
   },
-
-  // Transactions
   txList: { paddingHorizontal: 20, gap: 10 },
   txItem: {
     backgroundColor: "rgba(19,24,32,0.95)",
@@ -470,8 +473,6 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans_400Regular",
     marginTop: 4,
   },
-
-  // Score Widgets
   scoreRow: { flexDirection: "row", gap: 12, marginHorizontal: 20 },
   scoreCard: {
     flex: 1,

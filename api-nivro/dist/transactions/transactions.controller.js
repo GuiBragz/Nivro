@@ -21,14 +21,33 @@ let TransactionsController = class TransactionsController {
     constructor(transactionsService) {
         this.transactionsService = transactionsService;
     }
+    async remove(id, req) {
+        // No nosso JWT, o ID do usuário está em req.user.userId
+        return this.transactionsService.remove(id, req.user.userId);
+    }
     async create(req, dto) {
         return this.transactionsService.create(req.user.userId, dto);
     }
     async getDashboard(req) {
         return this.transactionsService.getDashboard(req.user.userId);
     }
+    async getCategories(req) {
+        // Busca todas as tags/categorias que o usuário já criou
+        return this.prismaService.tag.findMany({
+            where: { user_id: req.user.userId },
+            orderBy: { name: "asc" },
+        });
+    }
 };
 exports.TransactionsController = TransactionsController;
+__decorate([
+    (0, common_1.Delete)(":id"),
+    __param(0, (0, common_1.Param)("id")),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], TransactionsController.prototype, "remove", null);
 __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Req)()),
@@ -44,6 +63,13 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], TransactionsController.prototype, "getDashboard", null);
+__decorate([
+    (0, common_1.Get)("categories"),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], TransactionsController.prototype, "getCategories", null);
 exports.TransactionsController = TransactionsController = __decorate([
     (0, common_1.UseGuards)((0, passport_1.AuthGuard)("jwt")),
     (0, common_1.Controller)("transactions"),

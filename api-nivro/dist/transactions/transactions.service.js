@@ -74,6 +74,38 @@ let TransactionsService = class TransactionsService {
             },
         });
     }
+    // --- LÓGICA DE EXCLUSÃO (REVERTENDO O SALDO) ---
+    async remove(id, userId) {
+        // 1. Busca a transação e garante que ela pertence a uma conta deste usuário
+        const transaction = await this.prisma.transaction.findFirst({
+            where: {
+                id,
+                account: { user_id: userId },
+            },
+        });
+        if (!transaction) {
+            throw new common_1.NotFoundException("Transação não encontrada ou não pertence a você.");
+        }
+        // 2. Busca a conta para reverter o saldo
+        const account = await this.prisma.account.findUnique({
+            where: { id: transaction.account_id },
+        });
+        if (account) {
+            // Se era uma RECEITA (+), a gente subtrai do saldo. Se era DESPESA (-), a gente soma de volta.
+            const newBalance = transaction.type === "INCOME"
+                ? Number(account.balance) - Number(transaction.amount)
+                : Number(account.balance) + Number(transaction.amount);
+            await this.prisma.account.update({
+                where: { id: account.id },
+                data: { balance: newBalance },
+            });
+        }
+        // 3. Apaga a transação de fato
+        await this.prisma.transaction.delete({
+            where: { id },
+        });
+        return { message: "Transação excluída e saldo revertido com sucesso." };
+    }
 };
 exports.TransactionsService = TransactionsService;
 exports.TransactionsService = TransactionsService = __decorate([
