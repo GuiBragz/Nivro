@@ -10,6 +10,7 @@ import { NewTransaction } from "../screens/NewTransaction";
 import { Investments } from "../screens/Investments";
 import { NewAccount } from "../screens/NewAccount";
 import { Transactions } from "../screens/Transactions";
+import { NewCategory } from "../screens/NewCategory";
 
 const Tab = createBottomTabNavigator();
 
@@ -139,6 +140,15 @@ export function AppRoutes() {
           tabBarItemStyle: { display: "none" }, // Isso resolve o botão torto
           tabBarButton: () => null,
           tabBarStyle: { display: "none" }, // Esconde a barra quando a tela abre
+        }}
+      />
+      <Tab.Screen
+        name="NewCategory"
+        component={NewCategory}
+        options={{
+          tabBarItemStyle: { display: "none" },
+          tabBarButton: () => null,
+          tabBarStyle: { display: "none" },
         }}
       />
     </Tab.Navigator>

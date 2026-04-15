@@ -7,10 +7,11 @@ import {
   Req,
   Param,
   UseGuards,
+  BadRequestException,
+  Put,
 } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
 import { TransactionsService } from "./transactions.service";
-import { CreateTransactionDto } from "./dto/create-transaction.dto";
 
 @UseGuards(AuthGuard("jwt"))
 @Controller("transactions")
@@ -19,12 +20,11 @@ export class TransactionsController {
 
   @Delete(":id")
   async remove(@Param("id") id: string, @Req() req) {
-    // No nosso JWT, o ID do usuário está em req.user.userId
     return this.transactionsService.remove(id, req.user.userId);
   }
 
   @Post()
-  async create(@Req() req, @Body() dto: CreateTransactionDto) {
+  async create(@Req() req, @Body() dto: any) {
     return this.transactionsService.create(req.user.userId, dto);
   }
 
@@ -32,12 +32,28 @@ export class TransactionsController {
   async getDashboard(@Req() req) {
     return this.transactionsService.getDashboard(req.user.userId);
   }
-  @Get("categories")
-  async getCategories(@Req() req) {
-    // Busca todas as tags/categorias que o usuário já criou
-    return this.prismaService.tag.findMany({
-      where: { user_id: req.user.userId },
-      orderBy: { name: "asc" },
-    });
+
+  @Get("tags")
+  async getTags(@Req() req) {
+    return this.transactionsService.getTags(req.user.userId);
+  }
+
+  @Post("tags")
+  async createTag(
+    @Req() req,
+    @Body() body: { name: string; color_hex?: string },
+  ) {
+    if (!body.name) {
+      throw new BadRequestException("O nome da tag é obrigatório.");
+    }
+    return this.transactionsService.createTag(
+      req.user.userId,
+      body.name,
+      body.color_hex,
+    );
+  }
+  @Put(":id")
+  async update(@Param("id") id: string, @Req() req, @Body() dto: any) {
+    return this.transactionsService.update(id, req.user.userId, dto);
   }
 }

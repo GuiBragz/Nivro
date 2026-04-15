@@ -9,20 +9,26 @@ import {
   ScrollView,
   ActivityIndicator,
 } from "react-native";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import {
+  useNavigation,
+  useRoute,
+  useIsFocused,
+} from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 import { api } from "../api/api";
 
 export function NewTransaction() {
   const navigation = useNavigation<any>();
-  const route = useRoute<any>(); // Usamos any para evitar erro de tipagem no params
+  const route = useRoute<any>();
+  const isFocused = useIsFocused();
 
   const editingTransaction = route.params?.transaction;
 
   const [loading, setLoading] = useState(false);
-  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
 
+  // Estados do Formulário
   const [type, setType] = useState<"INCOME" | "EXPENSE">(
     editingTransaction?.type || "EXPENSE",
   );
@@ -33,52 +39,77 @@ export function NewTransaction() {
     editingTransaction?.amount?.toString() || "",
   );
 
+  // Estados de Categorias (Tags)
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState(
-    editingTransaction?.category_id || null,
+    editingTransaction?.tags?.[0]?.id || null,
   );
 
-  async function loadCategories() {
-    try {
-      setCategoriesLoading(true);
-      const response = await api.get("/categories");
-      setCategories(response.data);
+  // 👇 NOVOS: Estados de Contas
+  const [accounts, setAccounts] = useState<any[]>([]);
+  const [selectedAccountId, setSelectedAccountId] = useState(
+    editingTransaction?.account_id || null,
+  );
 
-      if (!editingTransaction && response.data.length > 0) {
-        setSelectedCategoryId(response.data[0].id);
+  // Carrega tanto as Contas quanto as Categorias ao mesmo tempo
+  async function loadData() {
+    try {
+      setDataLoading(true);
+
+      const [tagsResponse, accountsResponse] = await Promise.all([
+        api.get("/transactions/tags"),
+        api.get("/accounts"),
+      ]);
+
+      setCategories(tagsResponse.data);
+      setAccounts(accountsResponse.data);
+
+      // Auto-seleciona a primeira categoria se for uma transação nova
+      if (
+        !editingTransaction &&
+        tagsResponse.data.length > 0 &&
+        !selectedCategoryId
+      ) {
+        setSelectedCategoryId(tagsResponse.data[0].id);
+      }
+
+      // Auto-seleciona a primeira conta se for uma transação nova
+      if (
+        !editingTransaction &&
+        accountsResponse.data.length > 0 &&
+        !selectedAccountId
+      ) {
+        setSelectedAccountId(accountsResponse.data[0].id);
       }
     } catch (error) {
-      console.error("Erro ao carregar categorias:", error);
+      console.error("Erro ao carregar dados:", error);
     } finally {
-      setCategoriesLoading(false);
+      setDataLoading(false);
     }
   }
 
   useEffect(() => {
-    loadCategories();
-  }, []);
+    if (isFocused) {
+      loadData();
+    }
+  }, [isFocused]);
 
   async function handleSave() {
-    if (!description || !amount || !selectedCategoryId) {
+    if (!description || !amount || !selectedCategoryId || !selectedAccountId) {
       return Alert.alert(
         "Ops",
-        "Preencha todos os campos e selecione uma categoria.",
+        "Preencha todos os campos, selecione uma conta e uma categoria.",
       );
     }
 
     try {
       setLoading(true);
-      const accounts = await api.get("/accounts");
-      if (accounts.data.length === 0) {
-        setLoading(false);
-        return Alert.alert("Erro", "Cadastre uma conta bancária primeiro.");
-      }
 
       const payload = {
         description,
         amount: Number(amount.replace(",", ".")),
         type,
-        account_id: accounts.data[0].id,
+        account_id: selectedAccountId, // 👈 Agora usa a conta selecionada de verdade!
         category_id: selectedCategoryId,
         executed_at: new Date().toISOString(),
       };
@@ -155,9 +186,10 @@ export function NewTransaction() {
           </TouchableOpacity>
         </View>
 
+        {/* 👇 NOVO: SELETOR DE CONTAS 👇 */}
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>CATEGORIA</Text>
-          {categoriesLoading ? (
+          <Text style={styles.inputLabel}>CONTA BANCÁRIA</Text>
+          {dataLoading ? (
             <ActivityIndicator
               color="#00B37E"
               style={{ alignSelf: "flex-start" }}
@@ -168,25 +200,100 @@ export function NewTransaction() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ gap: 8 }}
             >
-              {categories.map((cat) => (
-                <TouchableOpacity
-                  key={cat.id}
-                  style={[
-                    styles.catChip,
-                    selectedCategoryId === cat.id && styles.catChipActive,
-                  ]}
-                  onPress={() => setSelectedCategoryId(cat.id)}
-                >
-                  <Text
+              {accounts.map((acc) => {
+                const isSelected = selectedAccountId === acc.id;
+                return (
+                  <TouchableOpacity
+                    key={acc.id}
                     style={[
-                      styles.catText,
-                      selectedCategoryId === cat.id && { color: "#000" },
+                      styles.catChip,
+                      isSelected && {
+                        backgroundColor: "rgba(0,179,126,0.1)",
+                        borderColor: "#00B37E",
+                      },
                     ]}
+                    onPress={() => setSelectedAccountId(acc.id)}
                   >
-                    {cat.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                    <Text
+                      style={[
+                        styles.catText,
+                        isSelected && { color: "#00B37E" },
+                      ]}
+                    >
+                      {acc.institution_name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+
+              <TouchableOpacity
+                style={[
+                  styles.catChip,
+                  {
+                    borderStyle: "dashed",
+                    borderColor: "rgba(232,237,245,0.3)",
+                    backgroundColor: "transparent",
+                  },
+                ]}
+                onPress={() => navigation.navigate("NewAccount")}
+              >
+                <Text style={styles.catText}>+ Nova</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          )}
+        </View>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>CATEGORIA</Text>
+          {dataLoading ? (
+            <ActivityIndicator
+              color="#00B37E"
+              style={{ alignSelf: "flex-start" }}
+            />
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 8 }}
+            >
+              {categories.map((cat) => {
+                const isSelected = selectedCategoryId === cat.id;
+                return (
+                  <TouchableOpacity
+                    key={cat.id}
+                    style={[
+                      styles.catChip,
+                      isSelected && {
+                        backgroundColor: cat.color_hex,
+                        borderColor: cat.color_hex,
+                      },
+                    ]}
+                    onPress={() => setSelectedCategoryId(cat.id)}
+                  >
+                    <Text
+                      style={[styles.catText, isSelected && { color: "#000" }]}
+                    >
+                      {cat.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+
+              <TouchableOpacity
+                style={[
+                  styles.catChip,
+                  {
+                    borderStyle: "dashed",
+                    borderColor: "#00B37E",
+                    backgroundColor: "transparent",
+                  },
+                ]}
+                onPress={() => navigation.navigate("NewCategory")}
+              >
+                <Text style={[styles.catText, { color: "#00B37E" }]}>
+                  + Nova
+                </Text>
+              </TouchableOpacity>
             </ScrollView>
           )}
         </View>
@@ -220,7 +327,7 @@ export function NewTransaction() {
         <TouchableOpacity
           activeOpacity={0.8}
           onPress={handleSave}
-          disabled={loading || categoriesLoading}
+          disabled={loading || dataLoading}
         >
           <LinearGradient
             colors={["#00B37E", "#00D496"]}
@@ -296,7 +403,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.1)",
   },
-  catChipActive: { backgroundColor: "#00B37E", borderColor: "#00B37E" },
   catText: {
     color: "rgba(232,237,245,0.55)",
     fontSize: 12,

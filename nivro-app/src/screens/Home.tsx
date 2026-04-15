@@ -16,19 +16,20 @@ import { useAuth } from "../contexts/AuthContext";
 export function Home() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [account, setAccount] = useState<any>(null);
+  const [totalBalance, setTotalBalance] = useState(0); // 👈 Atualizado para o saldo somado
   const [transactions, setTransactions] = useState<any[]>([]);
   const navigation = useNavigation<any>();
 
   async function loadHomeData() {
     try {
       setLoading(true);
-      const [accRes, txRes] = await Promise.all([
-        api.get("/accounts"),
+      // 👇 MÁGICA AQUI: Bate nas rotas novas do Back-end
+      const [balanceRes, txRes] = await Promise.all([
+        api.get("/accounts/balance"),
         api.get("/transactions/dashboard"),
       ]);
 
-      if (accRes.data.length > 0) setAccount(accRes.data[0]);
+      setTotalBalance(balanceRes.data.totalBalance);
       setTransactions(txRes.data);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
@@ -67,7 +68,7 @@ export function Home() {
     "Usuário";
   const userInitial = firstName.charAt(0).toUpperCase();
 
-  if (loading && !account) {
+  if (loading && transactions.length === 0) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#00B37E" />
@@ -103,10 +104,11 @@ export function Home() {
       >
         <Text style={styles.balLabel}>Saldo total</Text>
         <Text style={styles.balAmount}>
+          {/* 👇 Atualizado para renderizar a variável totalBalance */}
           {new Intl.NumberFormat("pt-BR", {
             style: "currency",
             currency: "BRL",
-          }).format(account ? Number(account.balance) : 0)}
+          }).format(totalBalance)}
         </Text>
 
         <Text
@@ -125,13 +127,19 @@ export function Home() {
         </Text>
 
         <View style={styles.balActions}>
-          <TouchableOpacity style={styles.balBtn}>
+          <TouchableOpacity
+            style={styles.balBtn}
+            onPress={() => navigation.navigate("New")}
+          >
             <Feather name="arrow-up" size={14} color="#E8EDF5" />
-            <Text style={styles.balBtnText}>Enviar</Text>
+            <Text style={styles.balBtnText}>Receita</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.balBtn}>
+          <TouchableOpacity
+            style={styles.balBtn}
+            onPress={() => navigation.navigate("New")}
+          >
             <Feather name="arrow-down" size={14} color="#E8EDF5" />
-            <Text style={styles.balBtnText}>Receber</Text>
+            <Text style={styles.balBtnText}>Despesa</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.balBtn, styles.balBtnPrimary]}
@@ -191,44 +199,68 @@ export function Home() {
 
       <View style={styles.txList}>
         {transactions.length > 0 ? (
-          transactions.slice(0, 5).map((item) => (
-            <View key={item.id} style={styles.txItem}>
-              <View style={styles.txIcon}>
-                <Feather
-                  name={
-                    item.type === "INCOME"
-                      ? "arrow-up-right"
-                      : "arrow-down-left"
-                  }
-                  size={20}
-                  color={item.type === "INCOME" ? "#00B37E" : "#F75A68"}
-                />
+          transactions.slice(0, 5).map((item) => {
+            // 👇 Lógica da Tag colorida adicionada aqui!
+            const tag = item.tags && item.tags.length > 0 ? item.tags[0] : null;
+            const tagName = tag ? tag.name : "Geral";
+            const tagColor = tag?.color_hex || "rgba(232,237,245,0.55)";
+
+            return (
+              <View key={item.id} style={styles.txItem}>
+                <View style={styles.txIcon}>
+                  <Feather
+                    name={
+                      item.type === "INCOME"
+                        ? "arrow-up-right"
+                        : "arrow-down-left"
+                    }
+                    size={20}
+                    color={item.type === "INCOME" ? "#00B37E" : "#F75A68"}
+                  />
+                </View>
+                <View style={styles.txInfo}>
+                  <Text style={styles.txName}>{item.description}</Text>
+
+                  {/* 👇 Bolinha de cor renderizada junto com a Categoria */}
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      marginTop: 2,
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: 3,
+                        backgroundColor: tagColor,
+                        marginRight: 6,
+                      }}
+                    />
+                    <Text style={styles.txCat}>{tagName}</Text>
+                  </View>
+                </View>
+                <View style={{ alignItems: "flex-end" }}>
+                  <Text
+                    style={[
+                      styles.txAmount,
+                      item.type === "INCOME" ? styles.textInc : styles.textExp,
+                    ]}
+                  >
+                    {item.type === "INCOME" ? "+" : "-"}
+                    {new Intl.NumberFormat("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                    }).format(Number(item.amount))}
+                  </Text>
+                  <Text style={styles.txTime}>
+                    {new Date(item.executed_at).toLocaleDateString("pt-BR")}
+                  </Text>
+                </View>
               </View>
-              <View style={styles.txInfo}>
-                <Text style={styles.txName}>{item.description}</Text>
-                <Text style={styles.txCat}>
-                  {item.category?.name || "Geral"}
-                </Text>
-              </View>
-              <View style={{ alignItems: "flex-end" }}>
-                <Text
-                  style={[
-                    styles.txAmount,
-                    item.type === "INCOME" ? styles.textInc : styles.textExp,
-                  ]}
-                >
-                  {item.type === "INCOME" ? "+" : "-"}
-                  {new Intl.NumberFormat("pt-BR", {
-                    style: "currency",
-                    currency: "BRL",
-                  }).format(Number(item.amount))}
-                </Text>
-                <Text style={styles.txTime}>
-                  {new Date(item.executed_at).toLocaleDateString("pt-BR")}
-                </Text>
-              </View>
-            </View>
-          ))
+            );
+          })
         ) : (
           <Text style={styles.emptyText}>
             Nenhuma transação registrada ainda.
@@ -462,7 +494,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "rgba(232,237,245,0.55)",
     fontFamily: "DMSans_400Regular",
-    marginTop: 2,
   },
   txAmount: { fontFamily: "JetBrainsMono_700Bold", fontSize: 14 },
   textInc: { color: "#00B37E" },

@@ -13,6 +13,7 @@ const users_module_1 = require("./users/users.module");
 const accounts_module_1 = require("./accounts/accounts.module");
 const transactions_module_1 = require("./transactions/transactions.module");
 const investments_module_1 = require("./investments/investments.module");
+const categories_module_1 = require("./categories/categories.module"); // 👈 Import adicionado
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -24,6 +25,7 @@ exports.AppModule = AppModule = __decorate([
             accounts_module_1.AccountsModule,
             transactions_module_1.TransactionsModule,
             investments_module_1.InvestmentsModule,
+            categories_module_1.CategoriesModule, // 👈 Módulo registrado
         ],
     })
 ], AppModule);

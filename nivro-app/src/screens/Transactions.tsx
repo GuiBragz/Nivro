@@ -17,8 +17,6 @@ export function Transactions() {
   const navigation = useNavigation<any>();
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState<any[]>([]);
-
-  // Estados para Busca e Filtro
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<"ALL" | "INCOME" | "EXPENSE">(
     "ALL",
@@ -27,7 +25,6 @@ export function Transactions() {
   async function loadTransactions() {
     try {
       setLoading(true);
-      // Aqui usamos a rota que traz o histórico completo
       const response = await api.get("/transactions/dashboard");
       setTransactions(response.data);
     } catch (error) {
@@ -43,11 +40,9 @@ export function Transactions() {
     }, []),
   );
 
-  // Função para Deletar Transação
   async function handleDelete(id: string) {
     try {
       await api.delete(`/transactions/${id}`);
-      // Atualiza a lista na tela removendo o item apagado
       setTransactions((prev) => prev.filter((t) => t.id !== id));
       Alert.alert("Sucesso", "Transação excluída!");
     } catch (error) {
@@ -55,15 +50,12 @@ export function Transactions() {
     }
   }
 
-  // Menu de Opções da Transação
   function handleOptions(transaction: any) {
     Alert.alert("Opções da Transação", transaction.description, [
       { text: "Cancelar", style: "cancel" },
       {
         text: "Editar",
-        // No próximo passo vamos mandar o ID para a tela NewTransaction
-        onPress: () =>
-          Alert.alert("Em Breve", "Vamos ligar isso à tela de Edição!"),
+        onPress: () => navigation.navigate("New", { transaction }),
       },
       {
         text: "Excluir",
@@ -81,7 +73,6 @@ export function Transactions() {
     ]);
   }
 
-  // Lógica de Filtragem (Texto + Tipo)
   const filteredTransactions = transactions.filter((t) => {
     const matchesType = filterType === "ALL" ? true : t.type === filterType;
     const matchesSearch = t.description
@@ -106,7 +97,6 @@ export function Transactions() {
           </View>
         </View>
 
-        {/* BARRA DE BUSCA */}
         <View style={styles.searchContainer}>
           <Feather
             name="search"
@@ -133,7 +123,6 @@ export function Transactions() {
         </View>
       </View>
 
-      {/* BARRA DE FILTROS */}
       <View style={styles.filterContainer}>
         <ScrollView
           horizontal
@@ -193,9 +182,7 @@ export function Transactions() {
 
           <TouchableOpacity
             style={styles.filterChipOutlined}
-            onPress={() =>
-              Alert.alert("Em Breve", "Vamos criar a tela de categorias!")
-            }
+            onPress={() => navigation.navigate("NewCategory")}
           >
             <Feather
               name="tag"
@@ -210,7 +197,6 @@ export function Transactions() {
         </ScrollView>
       </View>
 
-      {/* LISTA DE TRANSAÇÕES */}
       {loading ? (
         <ActivityIndicator
           size="large"
@@ -223,60 +209,71 @@ export function Transactions() {
           showsVerticalScrollIndicator={false}
         >
           {filteredTransactions.length > 0 ? (
-            filteredTransactions.map((item) => (
-              <View key={item.id} style={styles.txItem}>
-                <View style={styles.txIcon}>
-                  <Feather
-                    name={
-                      item.type === "INCOME"
-                        ? "arrow-up-right"
-                        : "arrow-down-left"
-                    }
-                    size={20}
-                    color={item.type === "INCOME" ? "#00B37E" : "#F75A68"}
-                  />
-                </View>
+            filteredTransactions.map((item) => {
+              // 👇 AJUSTE AQUI: Pegando a Tag do banco em vez do antigo 'category'
+              const tag =
+                item.tags && item.tags.length > 0 ? item.tags[0] : null;
+              const tagName = tag ? tag.name : "Geral";
+              const tagColor = tag?.color_hex || "rgba(232,237,245,0.55)";
 
-                <View style={styles.txInfo}>
-                  <Text style={styles.txName}>{item.description}</Text>
-                  <Text style={styles.txCat}>
-                    {item.category?.name || "Geral"}
-                  </Text>
-                </View>
+              return (
+                <View key={item.id} style={styles.txItem}>
+                  <View style={styles.txIcon}>
+                    <Feather
+                      name={
+                        item.type === "INCOME"
+                          ? "arrow-up-right"
+                          : "arrow-down-left"
+                      }
+                      size={20}
+                      color={item.type === "INCOME" ? "#00B37E" : "#F75A68"}
+                    />
+                  </View>
 
-                <View style={{ alignItems: "flex-end" }}>
-                  <Text
-                    style={[
-                      styles.txAmount,
-                      item.type === "INCOME"
-                        ? { color: "#00B37E" }
-                        : { color: "#F75A68" },
-                    ]}
+                  <View style={styles.txInfo}>
+                    <Text style={styles.txName}>{item.description}</Text>
+                    {/* 👇 BOLINHA COLORIDA ADICIONADA AQUI 👇 */}
+                    <View style={styles.tagRow}>
+                      <View
+                        style={[styles.colorDot, { backgroundColor: tagColor }]}
+                      />
+                      <Text style={styles.txCat}>{tagName}</Text>
+                    </View>
+                  </View>
+
+                  <View style={{ alignItems: "flex-end" }}>
+                    <Text
+                      style={[
+                        styles.txAmount,
+                        item.type === "INCOME"
+                          ? { color: "#00B37E" }
+                          : { color: "#F75A68" },
+                      ]}
+                    >
+                      {item.type === "INCOME" ? "+" : "-"}
+                      {new Intl.NumberFormat("pt-BR", {
+                        style: "currency",
+                        currency: "BRL",
+                      }).format(Number(item.amount))}
+                    </Text>
+                    <Text style={styles.txTime}>
+                      {new Date(item.executed_at).toLocaleDateString("pt-BR")}
+                    </Text>
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.moreBtn}
+                    onPress={() => handleOptions(item)}
                   >
-                    {item.type === "INCOME" ? "+" : "-"}
-                    {new Intl.NumberFormat("pt-BR", {
-                      style: "currency",
-                      currency: "BRL",
-                    }).format(Number(item.amount))}
-                  </Text>
-                  <Text style={styles.txTime}>
-                    {new Date(item.executed_at).toLocaleDateString("pt-BR")}
-                  </Text>
+                    <Feather
+                      name="more-vertical"
+                      size={20}
+                      color="rgba(232,237,245,0.55)"
+                    />
+                  </TouchableOpacity>
                 </View>
-
-                {/* BOTÃO DE OPÇÕES (EDITAR/EXCLUIR) */}
-                <TouchableOpacity
-                  style={styles.moreBtn}
-                  onPress={() => handleOptions(item)}
-                >
-                  <Feather
-                    name="more-vertical"
-                    size={20}
-                    color="rgba(232,237,245,0.55)"
-                  />
-                </TouchableOpacity>
-              </View>
-            ))
+              );
+            })
           ) : (
             <Text style={styles.emptyText}>Nenhuma transação encontrada.</Text>
           )}
@@ -301,8 +298,6 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans_700Bold",
     marginBottom: 16,
   },
-
-  // Search Bar
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -319,8 +314,6 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans_400Regular",
     fontSize: 15,
   },
-
-  // Filters
   filterContainer: { marginBottom: 16 },
   filterScroll: { gap: 8, paddingHorizontal: 20, alignItems: "center" },
   filterChip: {
@@ -336,7 +329,6 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans_700Bold",
     fontSize: 12,
   },
-
   divider: {
     width: 1,
     height: 20,
@@ -353,8 +345,6 @@ const styles = StyleSheet.create({
     borderColor: "rgba(0,179,126,0.3)",
     backgroundColor: "rgba(0,179,126,0.05)",
   },
-
-  // List
   list: { paddingHorizontal: 20, gap: 10 },
   txItem: {
     backgroundColor: "rgba(19,24,32,0.95)",
@@ -376,12 +366,16 @@ const styles = StyleSheet.create({
   },
   txInfo: { flex: 1 },
   txName: { fontSize: 14, fontFamily: "DMSans_700Bold", color: "#E8EDF5" },
+
+  // Tag com bolinha colorida
+  tagRow: { flexDirection: "row", alignItems: "center", marginTop: 4 },
+  colorDot: { width: 6, height: 6, borderRadius: 3, marginRight: 6 },
   txCat: {
     fontSize: 11,
     color: "rgba(232,237,245,0.55)",
     fontFamily: "DMSans_400Regular",
-    marginTop: 2,
   },
+
   txAmount: { fontFamily: "JetBrainsMono_700Bold", fontSize: 14 },
   txTime: {
     fontSize: 10,
@@ -390,7 +384,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
     textAlign: "right",
   },
-
   moreBtn: { marginLeft: 12, padding: 4 },
   emptyText: {
     color: "rgba(232,237,245,0.55)",

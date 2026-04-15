@@ -16,13 +16,11 @@ exports.TransactionsController = void 0;
 const common_1 = require("@nestjs/common");
 const passport_1 = require("@nestjs/passport");
 const transactions_service_1 = require("./transactions.service");
-const create_transaction_dto_1 = require("./dto/create-transaction.dto");
 let TransactionsController = class TransactionsController {
     constructor(transactionsService) {
         this.transactionsService = transactionsService;
     }
     async remove(id, req) {
-        // No nosso JWT, o ID do usuário está em req.user.userId
         return this.transactionsService.remove(id, req.user.userId);
     }
     async create(req, dto) {
@@ -31,12 +29,17 @@ let TransactionsController = class TransactionsController {
     async getDashboard(req) {
         return this.transactionsService.getDashboard(req.user.userId);
     }
-    async getCategories(req) {
-        // Busca todas as tags/categorias que o usuário já criou
-        return this.prismaService.tag.findMany({
-            where: { user_id: req.user.userId },
-            orderBy: { name: "asc" },
-        });
+    async getTags(req) {
+        return this.transactionsService.getTags(req.user.userId);
+    }
+    async createTag(req, body) {
+        if (!body.name) {
+            throw new common_1.BadRequestException("O nome da tag é obrigatório.");
+        }
+        return this.transactionsService.createTag(req.user.userId, body.name, body.color_hex);
+    }
+    async update(id, req, dto) {
+        return this.transactionsService.update(id, req.user.userId, dto);
     }
 };
 exports.TransactionsController = TransactionsController;
@@ -53,7 +56,7 @@ __decorate([
     __param(0, (0, common_1.Req)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, create_transaction_dto_1.CreateTransactionDto]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], TransactionsController.prototype, "create", null);
 __decorate([
@@ -64,12 +67,29 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], TransactionsController.prototype, "getDashboard", null);
 __decorate([
-    (0, common_1.Get)("categories"),
+    (0, common_1.Get)("tags"),
     __param(0, (0, common_1.Req)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
-], TransactionsController.prototype, "getCategories", null);
+], TransactionsController.prototype, "getTags", null);
+__decorate([
+    (0, common_1.Post)("tags"),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], TransactionsController.prototype, "createTag", null);
+__decorate([
+    (0, common_1.Put)(":id"),
+    __param(0, (0, common_1.Param)("id")),
+    __param(1, (0, common_1.Req)()),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", Promise)
+], TransactionsController.prototype, "update", null);
 exports.TransactionsController = TransactionsController = __decorate([
     (0, common_1.UseGuards)((0, passport_1.AuthGuard)("jwt")),
     (0, common_1.Controller)("transactions"),

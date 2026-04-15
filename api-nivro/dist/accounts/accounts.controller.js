@@ -16,19 +16,18 @@ exports.AccountsController = void 0;
 const common_1 = require("@nestjs/common");
 const passport_1 = require("@nestjs/passport");
 const accounts_service_1 = require("./accounts.service");
-const create_account_dto_1 = require("./dto/create-account.dto");
 let AccountsController = class AccountsController {
     constructor(accountsService) {
         this.accountsService = accountsService;
     }
-    async create(req, createAccountDto) {
-        // O JwtStrategy coloca os dados do usuário dentro de req.user
-        const userId = req.user.userId;
-        return this.accountsService.create(userId, createAccountDto);
+    async create(req, body) {
+        return this.accountsService.create(req.user.userId, body);
     }
     async findAll(req) {
-        const userId = req.user.userId;
-        return this.accountsService.findAll(userId);
+        return this.accountsService.findAll(req.user.userId);
+    }
+    async getBalance(req) {
+        return this.accountsService.getBalance(req.user.userId);
     }
 };
 exports.AccountsController = AccountsController;
@@ -37,7 +36,7 @@ __decorate([
     __param(0, (0, common_1.Req)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, create_account_dto_1.CreateAccountDto]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], AccountsController.prototype, "create", null);
 __decorate([
@@ -47,9 +46,15 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], AccountsController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Get)("balance"),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AccountsController.prototype, "getBalance", null);
 exports.AccountsController = AccountsController = __decorate([
-    (0, common_1.UseGuards)((0, passport_1.AuthGuard)("jwt")) // 🔒 Tranca todas as rotas deste controller!
-    ,
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)("jwt")),
     (0, common_1.Controller)("accounts"),
     __metadata("design:paramtypes", [accounts_service_1.AccountsService])
 ], AccountsController);

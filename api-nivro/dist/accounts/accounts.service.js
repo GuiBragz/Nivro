@@ -20,16 +20,20 @@ let AccountsService = class AccountsService {
         return this.prisma.account.create({
             data: {
                 ...data,
-                user_id: userId, // Garante que a conta pertence a quem está logado
+                user_id: userId,
             },
         });
     }
     async findAll(userId) {
-        // Retorna todas as contas do usuário
         return this.prisma.account.findMany({
             where: { user_id: userId },
             orderBy: { institution_name: "asc" },
         });
+    }
+    async getBalance(userId) {
+        const accounts = await this.findAll(userId);
+        const totalBalance = accounts.reduce((acc, curr) => acc + Number(curr.balance), 0);
+        return { totalBalance, accounts };
     }
 };
 exports.AccountsService = AccountsService;
