@@ -1,148 +1,258 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  ActivityIndicator,
-  Image,
+  ScrollView,
+  Alert,
+  Image, // 👈 Adicionado para renderizar a foto
 } from "react-native";
 import { useAuth } from "../contexts/AuthContext";
-import { api } from "../api/api";
+import { Feather } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native"; // 👈 Adicionado para os botões funcionarem
 
 export function Profile() {
-  const { signOut } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [userData, setUserData] = useState<any>(null);
+  const { user, signOut } = useAuth();
+  const navigation = useNavigation<any>();
 
-  async function loadProfile() {
-    try {
-      const response = await api.get("/users/profile");
-      setUserData(response.data);
-    } catch (error) {
-      console.error("Erro ao carregar perfil:", error);
-    } finally {
-      setLoading(false);
-    }
-  }
+  // 👇 Lógica para puxar o nome e a foto corretamente do banco
+  const fullName =
+    user?.profile?.full_name || user?.full_name || "Usuário Nivro";
+  const firstName = fullName.split(" ")[0];
+  const initial = firstName.charAt(0).toUpperCase();
+  const avatarUrl = user?.profile?.avatar_url;
 
-  useEffect(() => {
-    loadProfile();
-  }, []);
-
-  if (loading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator color="#00B37E" size="large" />
-      </View>
-    );
+  function handleLogout() {
+    Alert.alert("Sair", "Tem certeza que deseja sair da sua conta?", [
+      { text: "Cancelar", style: "cancel" },
+      { text: "Sair", style: "destructive", onPress: signOut },
+    ]);
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
-        <View style={styles.avatarPlaceholder}>
-          <Text style={styles.avatarText}>
-            {userData?.profile?.full_name?.[0].toUpperCase()}
-          </Text>
-        </View>
-
-        <Text style={styles.name}>{userData?.profile?.full_name}</Text>
-        <Text style={styles.email}>{userData?.email}</Text>
+        <Text style={styles.title}>Meu Perfil</Text>
       </View>
 
-      <View style={styles.content}>
-        <View style={styles.infoCard}>
-          <Text style={styles.infoLabel}>CPF</Text>
-          <Text style={styles.infoValue}>{userData?.cpf}</Text>
+      <View style={styles.userCard}>
+        <View style={styles.avatar}>
+          {/* 👇 Renderiza a foto se existir, senão mostra a inicial */}
+          {avatarUrl ? (
+            <Image
+              source={{ uri: avatarUrl }}
+              style={{ width: "100%", height: "100%" }}
+            />
+          ) : (
+            <Text style={styles.avatarText}>{initial}</Text>
+          )}
         </View>
+        <Text style={styles.userName}>{fullName}</Text>
+        <Text style={styles.userEmail}>{user?.email || "email@nivro.com"}</Text>
 
-        <View style={styles.infoCard}>
-          <Text style={styles.infoLabel}>Telefone</Text>
-          <Text style={styles.infoValue}>{userData?.phone}</Text>
+        <View style={styles.badge}>
+          <Feather
+            name="shield"
+            size={12}
+            color="#00B37E"
+            style={{ marginRight: 4 }}
+          />
+          <Text style={styles.badgeText}>Conta Protegida</Text>
         </View>
+      </View>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={signOut}>
-          <Text style={styles.logoutText}>Sair do Nivro</Text>
+      <View style={styles.menuGroup}>
+        <Text style={styles.menuTitle}>DADOS PESSOAIS</Text>
+
+        {/* 👇 Botão transformado em TouchableOpacity e linkado */}
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate("EditProfile")}
+        >
+          <View style={styles.menuIconBox}>
+            <Feather name="user" size={20} color="#E8EDF5" />
+          </View>
+          <View style={styles.menuTextContent}>
+            <Text style={styles.menuItemTitle}>Editar Perfil</Text>
+            <Text style={styles.menuItemDesc}>Atualize seu nome ou foto</Text>
+          </View>
+          <Feather
+            name="chevron-right"
+            size={20}
+            color="rgba(232,237,245,0.3)"
+          />
+        </TouchableOpacity>
+
+        {/* 👇 Botão transformado em TouchableOpacity e linkado */}
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate("Security")}
+        >
+          <View style={styles.menuIconBox}>
+            <Feather name="lock" size={20} color="#E8EDF5" />
+          </View>
+          <View style={styles.menuTextContent}>
+            <Text style={styles.menuItemTitle}>Segurança</Text>
+            <Text style={styles.menuItemDesc}>
+              Senha e autenticação em 2 fatores
+            </Text>
+          </View>
+          <Feather
+            name="chevron-right"
+            size={20}
+            color="rgba(232,237,245,0.3)"
+          />
         </TouchableOpacity>
       </View>
-    </View>
+
+      <View style={styles.menuGroup}>
+        <Text style={styles.menuTitle}>SUPORTE</Text>
+
+        <TouchableOpacity style={styles.menuItem}>
+          <View style={styles.menuIconBox}>
+            <Feather name="help-circle" size={20} color="#E8EDF5" />
+          </View>
+          <View style={styles.menuTextContent}>
+            <Text style={styles.menuItemTitle}>Central de Ajuda</Text>
+            <Text style={styles.menuItemDesc}>Fale com nosso time</Text>
+          </View>
+          <Feather
+            name="chevron-right"
+            size={20}
+            color="rgba(232,237,245,0.3)"
+          />
+        </TouchableOpacity>
+      </View>
+
+      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+        <Feather name="log-out" size={20} color="#F75A68" />
+        <Text style={styles.logoutText}>Sair da Conta</Text>
+      </TouchableOpacity>
+
+      <Text style={styles.version}>Nivro App v1.0.0</Text>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#121214",
-  },
-  centered: {
-    flex: 1,
-    backgroundColor: "#121214",
-    justifyContent: "center",
+  container: { flex: 1, backgroundColor: "#080A0E" },
+  content: { paddingTop: 60, paddingHorizontal: 24, paddingBottom: 40 },
+  header: { marginBottom: 32 },
+  title: { fontSize: 28, color: "#E8EDF5", fontFamily: "DMSans_700Bold" },
+
+  userCard: {
     alignItems: "center",
+    backgroundColor: "rgba(19,24,32,0.95)",
+    borderRadius: 24,
+    padding: 32,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.07)",
+    marginBottom: 32,
   },
-  header: {
-    alignItems: "center",
-    paddingTop: 80,
-    paddingBottom: 40,
-    backgroundColor: "#202024",
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
-  },
-  avatarPlaceholder: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "#00B37E",
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "rgba(0,179,126,0.1)",
+    borderWidth: 2,
+    borderColor: "#00B37E",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 16,
+    overflow: "hidden", // 👈 Importante para a foto não vazar o círculo
   },
-  avatarText: {
-    color: "#FFF",
-    fontSize: 40,
-    fontWeight: "bold",
-  },
-  name: {
-    color: "#FFF",
-    fontSize: 22,
-    fontWeight: "bold",
-  },
-  email: {
-    color: "#8D8D99",
-    fontSize: 14,
-  },
-  content: {
-    padding: 24,
-    gap: 16,
-  },
-  infoCard: {
-    backgroundColor: "#202024",
-    padding: 16,
-    borderRadius: 12,
-  },
-  infoLabel: {
-    color: "#8D8D99",
-    fontSize: 12,
+  avatarText: { fontSize: 32, color: "#00B37E", fontFamily: "DMSans_700Bold" },
+  userName: {
+    fontSize: 20,
+    color: "#E8EDF5",
+    fontFamily: "DMSans_700Bold",
     marginBottom: 4,
   },
-  infoValue: {
-    color: "#E1E1E6",
-    fontSize: 16,
-    fontWeight: "500",
+  userEmail: {
+    fontSize: 14,
+    color: "rgba(232,237,245,0.55)",
+    fontFamily: "DMSans_400Regular",
+    marginBottom: 16,
   },
-  logoutButton: {
-    marginTop: 20,
-    height: 56,
-    borderRadius: 12,
+  badge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(0,179,126,0.1)",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  badgeText: {
+    fontSize: 11,
+    color: "#00B37E",
+    fontFamily: "DMSans_700Bold",
+    textTransform: "uppercase",
+  },
+
+  menuGroup: { marginBottom: 24 },
+  menuTitle: {
+    fontSize: 11,
+    color: "rgba(232,237,245,0.4)",
+    fontFamily: "DMSans_700Bold",
+    letterSpacing: 1,
+    marginBottom: 12,
+    marginLeft: 16,
+  },
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#131820",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 8,
     borderWidth: 1,
-    borderColor: "#F75A68",
+    borderColor: "rgba(255,255,255,0.03)",
+  },
+  menuIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.05)",
     justifyContent: "center",
     alignItems: "center",
+    marginRight: 16,
+  },
+  menuTextContent: { flex: 1 },
+  menuItemTitle: {
+    fontSize: 15,
+    color: "#E8EDF5",
+    fontFamily: "DMSans_700Bold",
+    marginBottom: 2,
+  },
+  menuItemDesc: {
+    fontSize: 12,
+    color: "rgba(232,237,245,0.4)",
+    fontFamily: "DMSans_400Regular",
+  },
+
+  logoutBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(247,90,104,0.1)",
+    height: 56,
+    borderRadius: 16,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: "rgba(247,90,104,0.2)",
   },
   logoutText: {
+    marginLeft: 8,
+    fontSize: 15,
     color: "#F75A68",
-    fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "DMSans_700Bold",
+  },
+  version: {
+    textAlign: "center",
+    color: "rgba(232,237,245,0.3)",
+    fontSize: 12,
+    fontFamily: "DMSans_400Regular",
+    marginTop: 55,
   },
 });

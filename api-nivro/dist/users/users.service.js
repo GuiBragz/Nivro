@@ -49,7 +49,15 @@ let UsersService = class UsersService {
             return userWithoutPassword;
         });
     }
-    // --- MÉTODOS NOVOS ---
+    // 👇 MÉTODO NOVO ADICIONADO PARA O LOGIN 👇
+    // É ele que garante que ao logar, o seu nome e foto venham junto no pacote!
+    async findByEmail(email) {
+        return this.prisma.user.findUnique({
+            where: { email },
+            include: { profile: true },
+        });
+    }
+    // --- MÉTODOS EXISTENTES ---
     async getProfile(userId) {
         const user = await this.prisma.user.findUnique({
             where: { id: userId },

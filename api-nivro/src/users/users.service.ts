@@ -5,7 +5,7 @@ import {
 } from "@nestjs/common";
 import { PrismaService } from "../prisma.service";
 import { CreateUserDto } from "./dto/create-user.dto";
-import { UpdateProfileDto } from "./dto/update-profile.dto"; // Não esqueça de criar este DTO
+import { UpdateProfileDto } from "./dto/update-profile.dto";
 import * as bcrypt from "bcrypt";
 
 @Injectable()
@@ -49,7 +49,16 @@ export class UsersService {
     });
   }
 
-  // --- MÉTODOS NOVOS ---
+  // 👇 MÉTODO NOVO ADICIONADO PARA O LOGIN 👇
+  // É ele que garante que ao logar, o seu nome e foto venham junto no pacote!
+  async findByEmail(email: string) {
+    return this.prisma.user.findUnique({
+      where: { email },
+      include: { profile: true },
+    });
+  }
+
+  // --- MÉTODOS EXISTENTES ---
 
   async getProfile(userId: string) {
     const user = await this.prisma.user.findUnique({

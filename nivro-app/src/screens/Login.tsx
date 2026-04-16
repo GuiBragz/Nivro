@@ -7,17 +7,22 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native"; // 👈 Adicionamos a navegação
+import { useNavigation } from "@react-navigation/native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Feather } from "@expo/vector-icons";
 import { useAuth } from "../contexts/AuthContext";
 
 export function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const { signIn } = useAuth();
-  const navigation = useNavigation<any>(); // 👈 Inicializamos a navegação
+  const navigation = useNavigation<any>();
 
   async function handleLogin() {
     if (!email || !password) {
@@ -27,7 +32,7 @@ export function Login() {
 
     setIsLoggingIn(true);
     try {
-      await signIn(email, password);
+      await signIn(email.trim(), password);
     } catch (error) {
       Alert.alert("Erro", "E-mail ou senha incorretos.");
     } finally {
@@ -36,47 +41,78 @@ export function Login() {
   }
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
       <View style={styles.header}>
+        <View style={styles.logoContainer}>
+          <Feather name="bar-chart-2" size={40} color="#00B37E" />
+        </View>
         <Text style={styles.title}>Nivro</Text>
         <Text style={styles.subtitle}>O controle financeiro na sua mão.</Text>
       </View>
 
       <View style={styles.form}>
-        <TextInput
-          style={styles.input}
-          placeholder="E-mail"
-          placeholderTextColor="#888"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          value={email}
-          onChangeText={setEmail}
-        />
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>E-MAIL</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Seu e-mail de acesso"
+            placeholderTextColor="rgba(232,237,245,0.3)"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            value={email}
+            onChangeText={setEmail}
+          />
+        </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Senha"
-          placeholderTextColor="#888"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
+        <View style={styles.inputGroup}>
+          <View
+            style={{ flexDirection: "row", justifyContent: "space-between" }}
+          >
+            <Text style={styles.inputLabel}>SENHA</Text>
+            <TouchableOpacity
+              onPress={() => navigation.navigate("forgotPassword")}
+            >
+              <Text style={styles.forgotPassword}>Esqueci minha senha</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.passwordContainer}>
+            <TextInput
+              style={styles.passwordInput}
+              placeholder="Sua senha secreta"
+              placeholderTextColor="rgba(232,237,245,0.3)"
+              secureTextEntry={!showPassword}
+              value={password}
+              onChangeText={setPassword}
+            />
+            <TouchableOpacity
+              onPress={() => setShowPassword(!showPassword)}
+              style={styles.eyeBtn}
+            >
+              <Feather
+                name={showPassword ? "eye" : "eye-off"}
+                size={20}
+                color="rgba(232,237,245,0.55)"
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
 
         <TouchableOpacity
-          style={styles.button}
+          activeOpacity={0.8}
           onPress={handleLogin}
           disabled={isLoggingIn}
+          style={{ marginTop: 12 }}
         >
-          {isLoggingIn ? (
-            <ActivityIndicator color="#FFF" />
-          ) : (
-            <Text style={styles.buttonText}>Entrar</Text>
-          )}
-        </TouchableOpacity>
-
-        {/* 👇 Novos botões de navegação 👇 */}
-        <TouchableOpacity onPress={() => navigation.navigate("forgotPassword")}>
-          <Text style={styles.forgotPasswordText}>Esqueci minha senha</Text>
+          <LinearGradient colors={["#00B37E", "#00D496"]} style={styles.button}>
+            {isLoggingIn ? (
+              <ActivityIndicator color="#0D1017" />
+            ) : (
+              <Text style={styles.buttonText}>Entrar</Text>
+            )}
+          </LinearGradient>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -89,71 +125,113 @@ export function Login() {
           </Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#121214",
+    backgroundColor: "#0D1017",
     justifyContent: "center",
-    padding: 32,
   },
   header: {
-    marginBottom: 48,
+    alignItems: "center",
+    marginBottom: 40,
+    paddingHorizontal: 24,
   },
-  title: {
-    color: "#00B37E",
-    fontSize: 48,
-    fontWeight: "bold",
-    marginBottom: 8,
-  },
-  subtitle: {
-    color: "#C4C4CC",
-    fontSize: 16,
-  },
-  form: {
-    gap: 16,
-  },
-  input: {
-    backgroundColor: "#202024",
-    color: "#FFF",
-    height: 56,
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    fontSize: 16,
-  },
-  button: {
-    backgroundColor: "#00B37E",
-    height: 56,
-    borderRadius: 8,
+  logoContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 24,
+    backgroundColor: "rgba(0,179,126,0.1)",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "rgba(0,179,126,0.2)",
+  },
+  title: {
+    color: "#FFF",
+    fontSize: 32,
+    fontFamily: "JetBrainsMono_700Bold",
+    marginBottom: 8,
+    letterSpacing: -1,
+  },
+  subtitle: {
+    color: "rgba(232,237,245,0.55)",
+    fontSize: 15,
+    fontFamily: "DMSans_400Regular",
+  },
+  form: {
+    paddingHorizontal: 24,
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 12,
+    color: "rgba(232,237,245,0.55)",
+    fontFamily: "DMSans_700Bold",
+    marginBottom: 8,
+  },
+  input: {
+    height: 56,
+    backgroundColor: "#131820",
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    fontSize: 15,
+    color: "#E8EDF5",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.07)",
+    fontFamily: "DMSans_400Regular",
+  },
+  passwordContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#131820",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.07)",
+    height: 56,
+  },
+  passwordInput: {
+    flex: 1,
+    paddingHorizontal: 16,
+    fontSize: 15,
+    color: "#E8EDF5",
+    fontFamily: "DMSans_400Regular",
+  },
+  eyeBtn: {
+    padding: 16,
+  },
+  forgotPassword: {
+    fontSize: 12,
+    color: "#00B37E",
+    fontFamily: "DMSans_700Bold",
+  },
+  button: {
+    height: 56,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
   },
   buttonText: {
-    color: "#FFF",
+    color: "#0D1017",
     fontSize: 16,
-    fontWeight: "bold",
-  },
-  forgotPasswordText: {
-    color: "#00B37E",
-    textAlign: "center",
-    marginTop: 8,
-    fontSize: 14,
-    fontWeight: "600",
+    fontFamily: "DMSans_700Bold",
   },
   registerContainer: {
-    marginTop: 24,
+    marginTop: 32,
     alignItems: "center",
   },
   registerText: {
-    color: "#8D8D99",
+    color: "rgba(232,237,245,0.55)",
     fontSize: 14,
+    fontFamily: "DMSans_400Regular",
   },
   registerTextBold: {
-    color: "#FFF",
-    fontWeight: "bold",
+    color: "#00B37E",
+    fontFamily: "DMSans_700Bold",
   },
 });

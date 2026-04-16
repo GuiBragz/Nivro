@@ -11,6 +11,10 @@ import { Investments } from "../screens/Investments";
 import { NewAccount } from "../screens/NewAccount";
 import { Transactions } from "../screens/Transactions";
 import { NewCategory } from "../screens/NewCategory";
+import { EditProfile } from "../screens/EditProfile";
+import { Security } from "../screens/Security";
+// Importe a Insights se quiser trocar a aba Investments ou adicionar mais uma
+// import { Insights } from "../screens/Insights";
 
 const Tab = createBottomTabNavigator();
 
@@ -132,19 +136,41 @@ export function AppRoutes() {
         }}
       />
 
-      {/* 👇 A correção do flex fantasma está AQUI no tabBarItemStyle 👇 */}
+      {/* 👇 Telas secundárias que não aparecem no menu 👇 */}
       <Tab.Screen
         name="NewAccount"
         component={NewAccount}
         options={{
-          tabBarItemStyle: { display: "none" }, // Isso resolve o botão torto
+          tabBarItemStyle: { display: "none" },
           tabBarButton: () => null,
-          tabBarStyle: { display: "none" }, // Esconde a barra quando a tela abre
+          tabBarStyle: { display: "none" },
         }}
       />
+
       <Tab.Screen
         name="NewCategory"
         component={NewCategory}
+        options={{
+          tabBarItemStyle: { display: "none" },
+          tabBarButton: () => null,
+          tabBarStyle: { display: "none" },
+        }}
+      />
+
+      {/* 👇 NOSSAS DUAS TELAS NOVAS AQUI 👇 */}
+      <Tab.Screen
+        name="EditProfile"
+        component={EditProfile}
+        options={{
+          tabBarItemStyle: { display: "none" },
+          tabBarButton: () => null,
+          tabBarStyle: { display: "none" },
+        }}
+      />
+
+      <Tab.Screen
+        name="Security"
+        component={Security}
         options={{
           tabBarItemStyle: { display: "none" },
           tabBarButton: () => null,
