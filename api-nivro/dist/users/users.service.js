@@ -13,22 +13,22 @@ exports.UsersService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma.service");
 const bcrypt = require("bcrypt");
+const supabase_js_1 = require("@supabase/supabase-js");
+require("multer"); //
 let UsersService = class UsersService {
     constructor(prisma) {
         this.prisma = prisma;
+        this.supabase = (0, supabase_js_1.createClient)(process.env.SUPABASE_URL || "", process.env.SUPABASE_SERVICE_KEY || "");
     }
     async create(data) {
-        // 1. Verificar se E-mail ou CPF já existem
         const userExists = await this.prisma.user.findFirst({
             where: { OR: [{ email: data.email }, { cpf: data.cpf }] },
         });
         if (userExists) {
             throw new common_1.BadRequestException("E-mail ou CPF já cadastrados no sistema.");
         }
-        // 2. Criptografar a senha
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(data.password, salt);
-        // 3. Salvar no Supabase via Transaction
         return this.prisma.$transaction(async (tx) => {
             const user = await tx.user.create({
                 data: {
@@ -49,7 +49,6 @@ let UsersService = class UsersService {
             return userWithoutPassword;
         });
     }
-    // É ele que garante que ao logar, o seu nome e foto venham junto no pacote!
     async findByEmail(email) {
         return this.prisma.user.findUnique({
             where: { email },
@@ -86,31 +85,14 @@ let UsersService = class UsersService {
         const { password_hash, ...userWithoutPassword } = updatedUser;
         return userWithoutPassword;
     }
-    // 👇 MÉTODO ADICIONADO PARA EXCLUIR A CONTA 👇
     async deleteUser(userId) {
         try {
-            // Usamos uma transação para garantir que tudo seja apagado junto
             await this.prisma.$transaction(async (tx) => {
-                // 1. Apaga todas as transações do usuário
-                await tx.transaction.deleteMany({
-                    where: { user_id: userId },
-                });
-                // 2. Apaga todas as contas (bancos) do usuário
-                await tx.account.deleteMany({
-                    where: { user_id: userId },
-                });
-                // 3. Apaga as tags customizadas
-                await tx.tag.deleteMany({
-                    where: { user_id: userId },
-                });
-                // 4. Apaga o perfil (se não tiver cascade)
-                await tx.userProfile.deleteMany({
-                    where: { user_id: userId },
-                });
-                // 5. Por fim, apaga o próprio usuário
-                await tx.user.delete({
-                    where: { id: userId },
-                });
+                await tx.transaction.deleteMany({ where: { user_id: userId } });
+                await tx.account.deleteMany({ where: { user_id: userId } });
+                await tx.tag.deleteMany({ where: { user_id: userId } });
+                await tx.userProfile.deleteMany({ where: { user_id: userId } });
+                await tx.user.delete({ where: { id: userId } });
             });
             return { message: "Conta excluída permanentemente." };
         }
@@ -118,6 +100,32 @@ let UsersService = class UsersService {
             console.error("Erro ao deletar usuário:", error);
             throw new common_1.InternalServerErrorException("Não foi possível excluir a conta. Tente novamente.");
         }
+    }
+    async uploadAvatar(userId, file) {
+        if (!file) {
+            throw new common_1.BadRequestException("Nenhum arquivo enviado.");
+        }
+        const fileExtension = file.originalname.split(".").pop();
+        const fileName = `${userId}-${Date.now()}.${fileExtension}`;
+        // 1. Envia o arquivo para o bucket "avatars" no Supabase
+        const { error: uploadError } = await this.supabase.storage
+            .from("avatars")
+            .upload(fileName, file.buffer, {
+            contentType: file.mimetype,
+            upsert: true, // Se já existir, sobrescreve
+        });
+        if (uploadError) {
+            console.error("Erro no Supabase Storage:", uploadError);
+            throw new common_1.InternalServerErrorException("Falha ao salvar a imagem no servidor.");
+        }
+        // 2. Pega a URL pública dessa imagem
+        const { data: publicUrlData } = this.supabase.storage
+            .from("avatars")
+            .getPublicUrl(fileName);
+        const avatarUrl = publicUrlData.publicUrl;
+        // 3. Atualiza o banco de dados do usuário com a nova URL
+        await this.updateProfile(userId, { avatar_url: avatarUrl });
+        return { avatar_url: avatarUrl };
     }
 };
 exports.UsersService = UsersService;

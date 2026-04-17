@@ -14,7 +14,9 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UsersController = void 0;
 const common_1 = require("@nestjs/common");
+require("multer");
 const passport_1 = require("@nestjs/passport");
+const platform_express_1 = require("@nestjs/platform-express"); // 👈 Importado para ler arquivos
 const users_service_1 = require("./users.service");
 const create_user_dto_1 = require("./dto/create-user.dto");
 const update_profile_dto_1 = require("./dto/update-profile.dto");
@@ -27,7 +29,7 @@ let UsersController = class UsersController {
     }
     // 👇 Rotas protegidas abaixo 👇
     async getProfile(req) {
-        return this.usersService.getProfile(req.user.userId);
+        return this.usersService.getProfile(req.user.userId); // Verifica se o seu JWT usa req.user.userId ou req.user.sub
     }
     async updateProfile(req, updateProfileDto) {
         return this.usersService.updateProfile(req.user.userId, updateProfileDto);
@@ -35,9 +37,12 @@ let UsersController = class UsersController {
     async getMe(req) {
         return this.usersService.getProfile(req.user.userId);
     }
-    // 👇 ROTA ADICIONADA: Para o botão "Excluir Minha Conta" funcionar
     async deleteAccount(req) {
         return this.usersService.deleteUser(req.user.userId);
+    }
+    // 👇 ROTA ADICIONADA: UPLOAD DE FOTO (AVATAR) 👇
+    async uploadAvatar(req, file) {
+        return this.usersService.uploadAvatar(req.user.userId, file);
     }
 };
 exports.UsersController = UsersController;
@@ -83,6 +88,17 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "deleteAccount", null);
+__decorate([
+    (0, common_1.Post)("avatar"),
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)("jwt")),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)("file")) // "file" é o nome do campo que o app vai mandar
+    ,
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.UploadedFile)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "uploadAvatar", null);
 exports.UsersController = UsersController = __decorate([
     (0, common_1.Controller)("users"),
     __metadata("design:paramtypes", [users_service_1.UsersService])

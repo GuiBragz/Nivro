@@ -5,7 +5,6 @@ import { AiService } from "./ai.service";
 @Module({
   controllers: [AiController],
   providers: [AiService],
-  // Se você for usar o AiService em outros módulos, adicione:
-  // exports: [AiService]
+  exports: [AiService],
 })
-export class AiModule {} // 👈 O nome tem que ser IGUAL ao que você importou no AppModule
+export class AiModule {}

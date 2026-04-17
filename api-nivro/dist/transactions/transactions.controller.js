@@ -13,14 +13,15 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TransactionsController = void 0;
+require("multer");
 const common_1 = require("@nestjs/common");
 const passport_1 = require("@nestjs/passport");
+const platform_express_1 = require("@nestjs/platform-express");
 const transactions_service_1 = require("./transactions.service");
 let TransactionsController = class TransactionsController {
     constructor(transactionsService) {
         this.transactionsService = transactionsService;
     }
-    // 👇 ROTA ADICIONADA: Precisa ficar acima do :id para o NestJS não confundir
     async clearAllHistory(req) {
         return this.transactionsService.clearHistory(req.user.userId);
     }
@@ -44,6 +45,9 @@ let TransactionsController = class TransactionsController {
     }
     async update(id, req, dto) {
         return this.transactionsService.update(id, req.user.userId, dto);
+    }
+    async importExtrato(req, accountId, file) {
+        return this.transactionsService.importCsv(req.user.userId, accountId, file);
     }
 };
 exports.TransactionsController = TransactionsController;
@@ -101,6 +105,16 @@ __decorate([
     __metadata("design:paramtypes", [String, Object, Object]),
     __metadata("design:returntype", Promise)
 ], TransactionsController.prototype, "update", null);
+__decorate([
+    (0, common_1.Post)("import"),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)("file")),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)("account_id")),
+    __param(2, (0, common_1.UploadedFile)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String, Object]),
+    __metadata("design:returntype", Promise)
+], TransactionsController.prototype, "importExtrato", null);
 exports.TransactionsController = TransactionsController = __decorate([
     (0, common_1.UseGuards)((0, passport_1.AuthGuard)("jwt")),
     (0, common_1.Controller)("transactions"),
