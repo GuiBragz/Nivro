@@ -10,12 +10,14 @@ import {
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
+import { PieChart } from "react-native-gifted-charts";
 import { api } from "../api/api";
 
 export function Investments() {
   const [loading, setLoading] = useState(true);
   const [investments, setInvestments] = useState<any[]>([]);
   const [totalInvested, setTotalInvested] = useState(0);
+  const [pieData, setPieData] = useState<any[]>([]);
 
   const navigation = useNavigation<any>();
 
@@ -29,11 +31,21 @@ export function Investments() {
 
       setInvestments(investmentAccounts);
 
-      const total = investmentAccounts.reduce(
-        (acc: number, curr: any) => acc + Number(curr.balance),
-        0,
-      );
+      let total = 0;
+      const colors = ["#00B37E", "#3B82F6", "#F7C948", "#8B5CF6", "#F43F5E"];
+
+      const chartData = investmentAccounts.map((acc: any, index: number) => {
+        const value = Number(acc.balance);
+        total += value;
+        return {
+          value: value > 0 ? value : 0.1, // Previne erro no gráfico se o saldo for 0
+          color: colors[index % colors.length],
+          text: acc.institution_name,
+        };
+      });
+
       setTotalInvested(total);
+      setPieData(chartData);
     } catch (error) {
       console.error("Erro ao carregar investimentos:", error);
     } finally {
@@ -46,6 +58,21 @@ export function Investments() {
       loadInvestments();
     }, []),
   );
+
+  const renderCenterLabel = () => {
+    return (
+      <View style={{ justifyContent: "center", alignItems: "center" }}>
+        <Text style={styles.chartCenterLabel}>Carteira</Text>
+        <Text style={styles.chartCenterValue}>
+          {new Intl.NumberFormat("pt-BR", {
+            style: "currency",
+            currency: "BRL",
+            maximumFractionDigits: 0,
+          }).format(totalInvested)}
+        </Text>
+      </View>
+    );
+  };
 
   if (loading && investments.length === 0) {
     return (
@@ -93,35 +120,76 @@ export function Investments() {
         </View>
       </LinearGradient>
 
-      {/* LISTA DE CARTEIRAS */}
-      <View style={styles.listHeader}>
-        <Text style={styles.listTitle}>Minhas Carteiras</Text>
-      </View>
-
       {investments.length > 0 ? (
-        <View style={styles.portfolioGrid}>
-          {investments.map((inv) => (
-            <View key={inv.id} style={styles.assetCard}>
-              <View style={styles.assetHeader}>
-                <View style={styles.assetBadge}>
-                  <Feather name="trending-up" size={16} color="#3B82F6" />
-                </View>
-                <View style={styles.assetChangeTag}>
-                  <Text style={styles.assetChangeText}>Ativo</Text>
-                </View>
+        <View>
+          {/* GRÁFICO DA CARTEIRA */}
+          {totalInvested > 0 && (
+            <View style={styles.chartSection}>
+              <Text style={styles.sectionTitle}>DIVISÃO DA CARTEIRA</Text>
+              <View style={styles.chartContainer}>
+                <PieChart
+                  data={pieData}
+                  donut
+                  showGradient
+                  sectionAutoFocus
+                  radius={90}
+                  innerRadius={60}
+                  innerCircleColor="#131820"
+                  centerLabelComponent={renderCenterLabel}
+                />
               </View>
-
-              <Text style={styles.assetName}>{inv.institution_name}</Text>
-              <Text style={styles.assetType}>Renda Fixa / Variável</Text>
-
-              <Text style={styles.assetValue}>
-                {new Intl.NumberFormat("pt-BR", {
-                  style: "currency",
-                  currency: "BRL",
-                }).format(Number(inv.balance))}
-              </Text>
             </View>
-          ))}
+          )}
+
+          {/* LISTA DE CARTEIRAS */}
+          <View style={styles.listHeader}>
+            <Text style={styles.listTitle}>Minhas Corretoras</Text>
+            <TouchableOpacity onPress={() => navigation.navigate("NewAccount")}>
+              <Text style={styles.secLink}>+ Nova Conta</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.portfolioGrid}>
+            {investments.map((inv, index) => {
+              // Pega a mesma cor que foi pro gráfico
+              const colors = [
+                "#00B37E",
+                "#3B82F6",
+                "#F7C948",
+                "#8B5CF6",
+                "#F43F5E",
+              ];
+              const itemColor = colors[index % colors.length];
+
+              return (
+                <View key={inv.id} style={styles.assetCard}>
+                  <View style={styles.assetHeader}>
+                    <View
+                      style={[
+                        styles.assetBadge,
+                        { backgroundColor: `${itemColor}20` },
+                      ]}
+                    >
+                      <Feather name="briefcase" size={16} color={itemColor} />
+                    </View>
+                    <View style={styles.assetChangeTag}>
+                      <Text style={styles.assetChangeText}>Sincronizado</Text>
+                    </View>
+                  </View>
+
+                  <Text style={styles.assetName}>{inv.institution_name}</Text>
+                  <Text style={styles.assetType}>Conta de Investimento</Text>
+
+                  <Text style={styles.assetValue}>
+                    {new Intl.NumberFormat("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                    }).format(Number(inv.balance))}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
         </View>
       ) : (
         <View style={styles.emptyState}>
@@ -179,6 +247,7 @@ const styles = StyleSheet.create({
     padding: 24,
     borderWidth: 1,
     borderColor: "rgba(59,130,246,0.2)",
+    marginBottom: 24,
   },
   heroLabel: {
     fontSize: 12,
@@ -232,9 +301,47 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans_700Bold",
   },
 
+  // Gráfico
+  sectionTitle: {
+    fontSize: 11,
+    color: "rgba(232,237,245,0.4)",
+    fontFamily: "DMSans_700Bold",
+    letterSpacing: 1.5,
+    marginBottom: 12,
+    marginLeft: 24,
+  },
+  chartSection: { marginBottom: 24 },
+  chartContainer: {
+    alignItems: "center",
+    backgroundColor: "#131820",
+    padding: 20,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.03)",
+    marginHorizontal: 20,
+  },
+  chartCenterLabel: {
+    color: "rgba(232,237,245,0.55)",
+    fontSize: 11,
+    fontFamily: "DMSans_500Medium",
+    textTransform: "uppercase",
+  },
+  chartCenterValue: {
+    color: "#FFF",
+    fontSize: 14,
+    fontFamily: "JetBrainsMono_700Bold",
+  },
+
   // List Headers
-  listHeader: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 12 },
+  listHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 24,
+    paddingBottom: 12,
+  },
   listTitle: { fontSize: 15, fontFamily: "DMSans_700Bold", color: "#E8EDF5" },
+  secLink: { fontSize: 12, color: "#3B82F6", fontFamily: "DMSans_700Bold" },
 
   // Portfolio Grid
   portfolioGrid: {
@@ -262,7 +369,6 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 10,
-    backgroundColor: "rgba(59,130,246,0.12)",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -274,10 +380,9 @@ const styles = StyleSheet.create({
   },
   assetChangeText: {
     color: "#00B37E",
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: "DMSans_700Bold",
   },
-
   assetName: { fontSize: 13, fontFamily: "DMSans_700Bold", color: "#E8EDF5" },
   assetType: {
     fontSize: 10,
@@ -293,7 +398,7 @@ const styles = StyleSheet.create({
   },
 
   // Empty State
-  emptyState: { alignItems: "center", marginTop: 32, paddingHorizontal: 20 },
+  emptyState: { alignItems: "center", marginTop: 10, paddingHorizontal: 20 },
   emptyText: {
     color: "rgba(232,237,245,0.55)",
     textAlign: "center",

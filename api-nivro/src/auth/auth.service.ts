@@ -17,7 +17,10 @@ export class AuthService {
   ) {}
 
   async login(email: string, pass: string) {
-    const user = await this.prisma.user.findUnique({ where: { email } });
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      include: { profile: true }, // 👈 Busca o perfil do banco
+    });
 
     if (!user) {
       throw new UnauthorizedException("E-mail ou senha incorretos.");
@@ -29,9 +32,13 @@ export class AuthService {
     }
 
     const payload = { email: user.email, sub: user.id };
+
+    // 👇 Remove a senha e devolve o usuário completo pro Front-end!
+    const { password_hash, ...userWithoutPassword } = user;
+
     return {
       access_token: this.jwtService.sign(payload),
-      user: { id: user.id, email: user.email },
+      user: userWithoutPassword,
     };
   }
 

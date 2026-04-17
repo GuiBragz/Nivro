@@ -13,23 +13,24 @@ import { Transactions } from "../screens/Transactions";
 import { NewCategory } from "../screens/NewCategory";
 import { EditProfile } from "../screens/EditProfile";
 import { Security } from "../screens/Security";
-// Importe a Insights se quiser trocar a aba Investments ou adicionar mais uma
-// import { Insights } from "../screens/Insights";
+import { Insights } from "../screens/Insights";
+import { Privacy } from "../screens/Privacy";
+import { Notifications } from "../screens/Notifications";
+import { HelpCenter } from "../screens/HelpCenter";
 
 const Tab = createBottomTabNavigator();
 
-// 👇 O botão corrigido: sem View em volta, sem flex: 1, só uma margem para empurrar os vizinhos
 function CustomNewTransactionButton({ onPress }: any) {
   return (
     <TouchableOpacity
       activeOpacity={0.8}
       onPress={onPress}
       style={{
-        top: -20, // Subiu o botão
+        top: -20,
         justifyContent: "center",
         alignItems: "center",
-        width: 60, // Largura fixa
-        marginHorizontal: 10, // 👈 Isso aqui é o que garante o espaçamento igual pros lados
+        width: 60,
+        marginHorizontal: 10,
       }}
     >
       <LinearGradient
@@ -114,13 +115,14 @@ export function AppRoutes() {
         }}
       />
 
+      {/* 👇 A ABA DE INSIGHTS ENTROU AQUI NO LUGAR DE INVESTIMENTOS 👇 */}
       <Tab.Screen
-        name="Investments"
-        component={Investments}
+        name="Insights"
+        component={Insights}
         options={{
-          tabBarLabel: "Investir",
+          tabBarLabel: "Análise",
           tabBarIcon: ({ color }) => (
-            <Feather name="trending-up" size={22} color={color} />
+            <Feather name="pie-chart" size={22} color={color} />
           ),
         }}
       />
@@ -136,7 +138,19 @@ export function AppRoutes() {
         }}
       />
 
-      {/* 👇 Telas secundárias que não aparecem no menu 👇 */}
+      {/* --- TELAS SECUNDÁRIAS (OCULTAS DO MENU) --- */}
+
+      {/* Investimentos foi movido pra cá. A tela existe, mas o botão dela não quebra o layout */}
+      <Tab.Screen
+        name="Investments"
+        component={Investments}
+        options={{
+          tabBarItemStyle: { display: "none" },
+          tabBarButton: () => null,
+          tabBarStyle: { display: "none" },
+        }}
+      />
+
       <Tab.Screen
         name="NewAccount"
         component={NewAccount}
@@ -157,7 +171,6 @@ export function AppRoutes() {
         }}
       />
 
-      {/* 👇 NOSSAS DUAS TELAS NOVAS AQUI 👇 */}
       <Tab.Screen
         name="EditProfile"
         component={EditProfile}
@@ -171,6 +184,34 @@ export function AppRoutes() {
       <Tab.Screen
         name="Security"
         component={Security}
+        options={{
+          tabBarItemStyle: { display: "none" },
+          tabBarButton: () => null,
+          tabBarStyle: { display: "none" },
+        }}
+      />
+      <Tab.Screen
+        name="Privacy"
+        component={Privacy}
+        options={{
+          tabBarItemStyle: { display: "none" },
+          tabBarButton: () => null,
+          tabBarStyle: { display: "none" },
+        }}
+      />
+      <Tab.Screen
+        name="Notifications"
+        component={Notifications}
+        options={{
+          tabBarItemStyle: { display: "none" },
+          tabBarButton: () => null,
+          tabBarStyle: { display: "none" },
+        }}
+      />
+
+      <Tab.Screen
+        name="HelpCenter"
+        component={HelpCenter}
         options={{
           tabBarItemStyle: { display: "none" },
           tabBarButton: () => null,

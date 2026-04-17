@@ -12,8 +12,10 @@ import {
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import { api } from "../api/api";
+import { useAuth } from "../contexts/AuthContext"; // 👈 Importamos o Auth
 
 export function Transactions() {
+  const { hideBalances } = useAuth(); // 👈 Puxamos a preferência de privacidade
   const navigation = useNavigation<any>();
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -210,7 +212,6 @@ export function Transactions() {
         >
           {filteredTransactions.length > 0 ? (
             filteredTransactions.map((item) => {
-              // 👇 AJUSTE AQUI: Pegando a Tag do banco em vez do antigo 'category'
               const tag =
                 item.tags && item.tags.length > 0 ? item.tags[0] : null;
               const tagName = tag ? tag.name : "Geral";
@@ -232,7 +233,6 @@ export function Transactions() {
 
                   <View style={styles.txInfo}>
                     <Text style={styles.txName}>{item.description}</Text>
-                    {/* 👇 BOLINHA COLORIDA ADICIONADA AQUI 👇 */}
                     <View style={styles.tagRow}>
                       <View
                         style={[styles.colorDot, { backgroundColor: tagColor }]}
@@ -251,10 +251,13 @@ export function Transactions() {
                       ]}
                     >
                       {item.type === "INCOME" ? "+" : "-"}
-                      {new Intl.NumberFormat("pt-BR", {
-                        style: "currency",
-                        currency: "BRL",
-                      }).format(Number(item.amount))}
+                      {/* 👇 AQUI A MÁGICA DO SALDO OCULTO 👇 */}
+                      {hideBalances
+                        ? "•••••"
+                        : new Intl.NumberFormat("pt-BR", {
+                            style: "currency",
+                            currency: "BRL",
+                          }).format(Number(item.amount))}
                     </Text>
                     <Text style={styles.txTime}>
                       {new Date(item.executed_at).toLocaleDateString("pt-BR")}
@@ -284,6 +287,7 @@ export function Transactions() {
   );
 }
 
+// ... styles permanecem os mesmos
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#080A0E", paddingTop: 60 },
   header: { paddingHorizontal: 24, paddingBottom: 16 },

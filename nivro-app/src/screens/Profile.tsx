@@ -6,17 +6,16 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
-  Image, // 👈 Adicionado para renderizar a foto
+  Image,
 } from "react-native";
 import { useAuth } from "../contexts/AuthContext";
 import { Feather } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native"; // 👈 Adicionado para os botões funcionarem
+import { useNavigation } from "@react-navigation/native";
 
 export function Profile() {
   const { user, signOut } = useAuth();
   const navigation = useNavigation<any>();
 
-  // 👇 Lógica para puxar o nome e a foto corretamente do banco
   const fullName =
     user?.profile?.full_name || user?.full_name || "Usuário Nivro";
   const firstName = fullName.split(" ")[0];
@@ -31,14 +30,17 @@ export function Profile() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+    >
       <View style={styles.header}>
         <Text style={styles.title}>Meu Perfil</Text>
       </View>
 
       <View style={styles.userCard}>
         <View style={styles.avatar}>
-          {/* 👇 Renderiza a foto se existir, senão mostra a inicial */}
           {avatarUrl ? (
             <Image
               source={{ uri: avatarUrl }}
@@ -65,7 +67,6 @@ export function Profile() {
       <View style={styles.menuGroup}>
         <Text style={styles.menuTitle}>DADOS PESSOAIS</Text>
 
-        {/* 👇 Botão transformado em TouchableOpacity e linkado */}
         <TouchableOpacity
           style={styles.menuItem}
           onPress={() => navigation.navigate("EditProfile")}
@@ -84,7 +85,6 @@ export function Profile() {
           />
         </TouchableOpacity>
 
-        {/* 👇 Botão transformado em TouchableOpacity e linkado */}
         <TouchableOpacity
           style={styles.menuItem}
           onPress={() => navigation.navigate("Security")}
@@ -104,12 +104,36 @@ export function Profile() {
             color="rgba(232,237,245,0.3)"
           />
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate("Privacy")}
+        >
+          <View style={styles.menuIconBox}>
+            <Feather name="eye-off" size={20} color="#E8EDF5" />
+          </View>
+          <View style={styles.menuTextContent}>
+            <Text style={styles.menuItemTitle}>Privacidade</Text>
+            <Text style={styles.menuItemDesc}>
+              Controle de dados e visibilidade
+            </Text>
+          </View>
+          <Feather
+            name="chevron-right"
+            size={20}
+            color="rgba(232,237,245,0.3)"
+          />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.menuGroup}>
         <Text style={styles.menuTitle}>SUPORTE</Text>
 
-        <TouchableOpacity style={styles.menuItem}>
+        {/* 👇 AQUI: Botão com a navegação adicionada 👇 */}
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate("HelpCenter")}
+        >
           <View style={styles.menuIconBox}>
             <Feather name="help-circle" size={20} color="#E8EDF5" />
           </View>
@@ -160,7 +184,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 16,
-    overflow: "hidden", // 👈 Importante para a foto não vazar o círculo
+    overflow: "hidden",
   },
   avatarText: { fontSize: 32, color: "#00B37E", fontFamily: "DMSans_700Bold" },
   userName: {

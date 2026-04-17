@@ -6,6 +6,7 @@ import {
   ScrollView,
   ActivityIndicator,
   TouchableOpacity,
+  Image,
 } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -14,16 +15,15 @@ import { api } from "../api/api";
 import { useAuth } from "../contexts/AuthContext";
 
 export function Home() {
-  const { user } = useAuth();
+  const { user, hideBalances } = useAuth(); // 👈 Puxando o estado global
   const [loading, setLoading] = useState(true);
-  const [totalBalance, setTotalBalance] = useState(0); // 👈 Atualizado para o saldo somado
+  const [totalBalance, setTotalBalance] = useState(0);
   const [transactions, setTransactions] = useState<any[]>([]);
   const navigation = useNavigation<any>();
 
   async function loadHomeData() {
     try {
       setLoading(true);
-      // 👇 MÁGICA AQUI: Bate nas rotas novas do Back-end
       const [balanceRes, txRes] = await Promise.all([
         api.get("/accounts/balance"),
         api.get("/transactions/dashboard"),
@@ -61,12 +61,14 @@ export function Home() {
   if (currentHour < 12) greetingTime = "Bom dia";
   else if (currentHour < 18) greetingTime = "Boa tarde";
 
-  const firstName =
-    user?.full_name?.split(" ")[0] ||
-    user?.name?.split(" ")[0] ||
+  const fullName =
+    user?.profile?.full_name ||
+    user?.full_name ||
     user?.email?.split("@")[0] ||
     "Usuário";
+  const firstName = fullName.split(" ")[0];
   const userInitial = firstName.charAt(0).toUpperCase();
+  const avatarUrl = user?.profile?.avatar_url;
 
   if (loading && transactions.length === 0) {
     return (
@@ -88,13 +90,27 @@ export function Home() {
           <Text style={styles.greetingName}>{firstName}</Text>
         </View>
         <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.notifBtn}>
+          <TouchableOpacity
+            style={styles.notifBtn}
+            onPress={() => navigation.navigate("Notifications")}
+          >
             <Feather name="bell" size={18} color="#E8EDF5" />
             <View style={styles.notifDot} />
           </TouchableOpacity>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{userInitial}</Text>
-          </View>
+
+          <TouchableOpacity
+            style={styles.avatar}
+            onPress={() => navigation.navigate("Profile")}
+          >
+            {avatarUrl ? (
+              <Image
+                source={{ uri: avatarUrl }}
+                style={{ width: "100%", height: "100%" }}
+              />
+            ) : (
+              <Text style={styles.avatarText}>{userInitial}</Text>
+            )}
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -104,11 +120,13 @@ export function Home() {
       >
         <Text style={styles.balLabel}>Saldo total</Text>
         <Text style={styles.balAmount}>
-          {/* 👇 Atualizado para renderizar a variável totalBalance */}
-          {new Intl.NumberFormat("pt-BR", {
-            style: "currency",
-            currency: "BRL",
-          }).format(totalBalance)}
+          {/* 👇 Lógica de Máscara de Saldo */}
+          {hideBalances
+            ? "R$ •••••"
+            : new Intl.NumberFormat("pt-BR", {
+                style: "currency",
+                currency: "BRL",
+              }).format(totalBalance)}
         </Text>
 
         <Text
@@ -119,10 +137,13 @@ export function Home() {
         >
           {poupancaTotal >= 0 ? "▲" : "▼"}
           {poupancaTotal >= 0 ? " +" : " "}
-          {new Intl.NumberFormat("pt-BR", {
-            style: "currency",
-            currency: "BRL",
-          }).format(poupancaTotal)}{" "}
+          {/* 👇 Lógica de Máscara de Saldo */}
+          {hideBalances
+            ? "•••••"
+            : new Intl.NumberFormat("pt-BR", {
+                style: "currency",
+                currency: "BRL",
+              }).format(poupancaTotal)}{" "}
           este mês
         </Text>
 
@@ -164,10 +185,13 @@ export function Home() {
             <Feather name="arrow-up" size={16} color="#00B37E" />
           </View>
           <Text style={[styles.statVal, { color: "#00B37E" }]}>
-            {new Intl.NumberFormat("pt-BR", {
-              style: "currency",
-              currency: "BRL",
-            }).format(incomeTotal)}
+            {/* 👇 Lógica de Máscara de Saldo */}
+            {hideBalances
+              ? "•••••"
+              : new Intl.NumberFormat("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                }).format(incomeTotal)}
           </Text>
           <Text style={styles.statLbl}>Receitas / mês</Text>
         </View>
@@ -181,10 +205,13 @@ export function Home() {
             <Feather name="arrow-down" size={16} color="#F75A68" />
           </View>
           <Text style={[styles.statVal, { color: "#F75A68" }]}>
-            {new Intl.NumberFormat("pt-BR", {
-              style: "currency",
-              currency: "BRL",
-            }).format(expenseTotal)}
+            {/* 👇 Lógica de Máscara de Saldo */}
+            {hideBalances
+              ? "•••••"
+              : new Intl.NumberFormat("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                }).format(expenseTotal)}
           </Text>
           <Text style={styles.statLbl}>Despesas / mês</Text>
         </View>
@@ -200,7 +227,6 @@ export function Home() {
       <View style={styles.txList}>
         {transactions.length > 0 ? (
           transactions.slice(0, 5).map((item) => {
-            // 👇 Lógica da Tag colorida adicionada aqui!
             const tag = item.tags && item.tags.length > 0 ? item.tags[0] : null;
             const tagName = tag ? tag.name : "Geral";
             const tagColor = tag?.color_hex || "rgba(232,237,245,0.55)";
@@ -221,7 +247,6 @@ export function Home() {
                 <View style={styles.txInfo}>
                   <Text style={styles.txName}>{item.description}</Text>
 
-                  {/* 👇 Bolinha de cor renderizada junto com a Categoria */}
                   <View
                     style={{
                       flexDirection: "row",
@@ -249,10 +274,13 @@ export function Home() {
                     ]}
                   >
                     {item.type === "INCOME" ? "+" : "-"}
-                    {new Intl.NumberFormat("pt-BR", {
-                      style: "currency",
-                      currency: "BRL",
-                    }).format(Number(item.amount))}
+                    {/* 👇 Lógica de Máscara de Saldo */}
+                    {hideBalances
+                      ? "•••••"
+                      : new Intl.NumberFormat("pt-BR", {
+                          style: "currency",
+                          currency: "BRL",
+                        }).format(Number(item.amount))}
                   </Text>
                   <Text style={styles.txTime}>
                     {new Date(item.executed_at).toLocaleDateString("pt-BR")}
@@ -267,6 +295,63 @@ export function Home() {
           </Text>
         )}
       </View>
+
+      <TouchableOpacity
+        style={{ marginHorizontal: 20, marginTop: 24, marginBottom: 8 }}
+        onPress={() => navigation.navigate("Investments")}
+      >
+        <LinearGradient
+          colors={["rgba(59,130,246,0.15)", "rgba(10,21,37,0.8)"]}
+          style={{
+            padding: 20,
+            borderRadius: 20,
+            borderWidth: 1,
+            borderColor: "rgba(59,130,246,0.3)",
+            flexDirection: "row",
+            alignItems: "center",
+          }}
+        >
+          <View
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: 24,
+              backgroundColor: "rgba(59,130,246,0.2)",
+              justifyContent: "center",
+              alignItems: "center",
+              marginRight: 16,
+            }}
+          >
+            <Feather name="trending-up" size={20} color="#3B82F6" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text
+              style={{
+                fontSize: 15,
+                color: "#FFF",
+                fontFamily: "DMSans_700Bold",
+                marginBottom: 2,
+              }}
+            >
+              Meu Portfólio
+            </Text>
+            <Text
+              style={{
+                fontSize: 12,
+                color: "rgba(232,237,245,0.55)",
+                fontFamily: "DMSans_400Regular",
+              }}
+            >
+              Acompanhe seus investimentos
+            </Text>
+          </View>
+          <Feather
+            name="chevron-right"
+            size={20}
+            color="rgba(59,130,246,0.5)"
+          />
+        </LinearGradient>
+      </TouchableOpacity>
 
       <View style={[styles.secHeader, { marginTop: 8 }]}>
         <Text style={styles.secTitle}>Saúde Financeira</Text>
@@ -295,10 +380,13 @@ export function Home() {
             adjustsFontSizeToFit
           >
             {poupancaTotal > 0 ? "+" : ""}
-            {new Intl.NumberFormat("pt-BR", {
-              style: "currency",
-              currency: "BRL",
-            }).format(poupancaTotal)}
+            {/* 👇 Lógica de Máscara de Saldo */}
+            {hideBalances
+              ? "•••••"
+              : new Intl.NumberFormat("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                }).format(poupancaTotal)}
           </Text>
           <Text style={styles.scoreLbl} numberOfLines={1}>
             Poupança
@@ -324,6 +412,7 @@ export function Home() {
   );
 }
 
+// ... styles permanecem os mesmos
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#080A0E" },
   content: { paddingTop: 60 },
@@ -383,6 +472,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(0,179,126,0.12)",
     justifyContent: "center",
     alignItems: "center",
+    overflow: "hidden",
   },
   avatarText: { color: "#00B37E", fontFamily: "DMSans_700Bold", fontSize: 14 },
   balanceCard: {

@@ -39,4 +39,9 @@ export class UsersController {
   async updateProfile(@Req() req, @Body() updateProfileDto: UpdateProfileDto) {
     return this.usersService.updateProfile(req.user.userId, updateProfileDto);
   }
+  @Get("me")
+  @UseGuards(AuthGuard("jwt"))
+  async getMe(@Req() req) {
+    return this.usersService.getProfile(req.user.userId);
+  }
 }

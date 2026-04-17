@@ -33,6 +33,9 @@ let UsersController = class UsersController {
     async updateProfile(req, updateProfileDto) {
         return this.usersService.updateProfile(req.user.userId, updateProfileDto);
     }
+    async getMe(req) {
+        return this.usersService.getProfile(req.user.userId);
+    }
 };
 exports.UsersController = UsersController;
 __decorate([
@@ -63,6 +66,14 @@ __decorate([
     __metadata("design:paramtypes", [Object, update_profile_dto_1.UpdateProfileDto]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "updateProfile", null);
+__decorate([
+    (0, common_1.Get)("me"),
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)("jwt")),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "getMe", null);
 exports.UsersController = UsersController = __decorate([
     (0, common_1.Controller)("users"),
     __metadata("design:paramtypes", [users_service_1.UsersService])
