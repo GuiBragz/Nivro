@@ -2,18 +2,27 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  InternalServerErrorException,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma.service";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { UpdateProfileDto } from "./dto/update-profile.dto";
 import * as bcrypt from "bcrypt";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import "multer"; //
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  private supabase: SupabaseClient;
+
+  constructor(private prisma: PrismaService) {
+    this.supabase = createClient(
+      process.env.SUPABASE_URL || "",
+      process.env.SUPABASE_SERVICE_KEY || "",
+    );
+  }
 
   async create(data: CreateUserDto) {
-    // 1. Verificar se E-mail ou CPF já existem
     const userExists = await this.prisma.user.findFirst({
       where: { OR: [{ email: data.email }, { cpf: data.cpf }] },
     });
@@ -22,11 +31,9 @@ export class UsersService {
       throw new BadRequestException("E-mail ou CPF já cadastrados no sistema.");
     }
 
-    // 2. Criptografar a senha
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(data.password, salt);
 
-    // 3. Salvar no Supabase via Transaction
     return this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
@@ -49,16 +56,12 @@ export class UsersService {
     });
   }
 
-  // 👇 MÉTODO NOVO ADICIONADO PARA O LOGIN 👇
-  // É ele que garante que ao logar, o seu nome e foto venham junto no pacote!
   async findByEmail(email: string) {
     return this.prisma.user.findUnique({
       where: { email },
       include: { profile: true },
     });
   }
-
-  // --- MÉTODOS EXISTENTES ---
 
   async getProfile(userId: string) {
     const user = await this.prisma.user.findUnique({
@@ -80,9 +83,7 @@ export class UsersService {
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
       data: {
-        // Atualiza campos de User (se fornecidos)
         ...(phone && { phone }),
-        // Atualiza campos de UserProfile (se fornecidos)
         profile: {
           update: {
             ...(full_name && { full_name }),
@@ -96,5 +97,60 @@ export class UsersService {
 
     const { password_hash, ...userWithoutPassword } = updatedUser;
     return userWithoutPassword;
+  }
+
+  async deleteUser(userId: string) {
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.transaction.deleteMany({ where: { user_id: userId } });
+        await tx.account.deleteMany({ where: { user_id: userId } });
+        await tx.tag.deleteMany({ where: { user_id: userId } });
+        await tx.userProfile.deleteMany({ where: { user_id: userId } });
+        await tx.user.delete({ where: { id: userId } });
+      });
+
+      return { message: "Conta excluída permanentemente." };
+    } catch (error) {
+      console.error("Erro ao deletar usuário:", error);
+      throw new InternalServerErrorException(
+        "Não foi possível excluir a conta. Tente novamente.",
+      );
+    }
+  }
+
+  async uploadAvatar(userId: string, file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException("Nenhum arquivo enviado.");
+    }
+
+    const fileExtension = file.originalname.split(".").pop();
+    const fileName = `${userId}-${Date.now()}.${fileExtension}`;
+
+    // 1. Envia o arquivo para o bucket "avatars" no Supabase
+    const { error: uploadError } = await this.supabase.storage
+      .from("avatars")
+      .upload(fileName, file.buffer, {
+        contentType: file.mimetype,
+        upsert: true, // Se já existir, sobrescreve
+      });
+
+    if (uploadError) {
+      console.error("Erro no Supabase Storage:", uploadError);
+      throw new InternalServerErrorException(
+        "Falha ao salvar a imagem no servidor.",
+      );
+    }
+
+    // 2. Pega a URL pública dessa imagem
+    const { data: publicUrlData } = this.supabase.storage
+      .from("avatars")
+      .getPublicUrl(fileName);
+
+    const avatarUrl = publicUrlData.publicUrl;
+
+    // 3. Atualiza o banco de dados do usuário com a nova URL
+    await this.updateProfile(userId, { avatar_url: avatarUrl });
+
+    return { avatar_url: avatarUrl };
   }
 }

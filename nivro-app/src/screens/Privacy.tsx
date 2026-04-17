@@ -12,10 +12,12 @@ import { useNavigation } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import * as LocalAuthentication from "expo-local-authentication";
 import * as SecureStore from "expo-secure-store";
-import * as FileSystem from "expo-file-system"; // 👈 Para criar o arquivo
-import * as Sharing from "expo-sharing"; // 👈 Para compartilhar o arquivo
+
+// 👇 CORREÇÃO 1: Importamos a versão "legacy" para funcionar no Expo 54
+import * as FileSystem from "expo-file-system/legacy";
+
 import { useAuth } from "../contexts/AuthContext";
-import { api } from "../api/api"; // 👈 Para pegar os dados reais
+import { api } from "../api/api";
 
 export function Privacy() {
   const navigation = useNavigation<any>();
@@ -60,13 +62,11 @@ export function Privacy() {
     }
   }
 
-  // 👇 Lógica Real da Análise de Uso
   async function handleToggleAnalytics(value: boolean) {
     setAnalytics(value);
     await SecureStore.setItemAsync("allowAnalytics", String(value));
   }
 
-  // 👇 Lógica Real de Exportar CSV
   async function handleExportData() {
     try {
       const response = await api.get("/transactions/dashboard");
@@ -77,20 +77,26 @@ export function Privacy() {
       }
 
       let csvHeader = "Data;Descricao;Tipo;Valor\n";
-      let csvContent = transactions
-        .map((t: any) => {
-          const date = new Date(t.executed_at).toLocaleDateString("pt-BR");
-          return `${date};${t.description};${t.type};${t.amount}`;
-        })
-        .join("\n");
+      let csvContent = "";
+
+      for (const t of transactions) {
+        const date = new Date(t.executed_at).toLocaleDateString("pt-BR");
+        csvContent += `${date};${t.description};${t.type};${t.amount}\n`;
+      }
 
       const fileUri = FileSystem.documentDirectory + "extrato_nivro.csv";
+
+      // 👇 CORREÇÃO 2: A chamada da função na versão Legacy com o tipo em string
       await FileSystem.writeAsStringAsync(fileUri, csvHeader + csvContent, {
-        encoding: FileSystem.EncodingType.UTF8,
+        encoding: "utf8",
       });
 
-      await Sharing.shareAsync(fileUri);
+      Alert.alert(
+        "Exportação Concluída",
+        "Seu histórico de transações foi salvo com sucesso nos arquivos do aplicativo.",
+      );
     } catch (error) {
+      console.error(error);
       Alert.alert("Erro", "Não foi possível gerar o arquivo.");
     }
   }
@@ -208,6 +214,7 @@ export function Privacy() {
   );
 }
 
+// ... styles mantidos inalterados
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#080A0E" },
   content: { paddingTop: 60, paddingHorizontal: 24, paddingBottom: 40 },

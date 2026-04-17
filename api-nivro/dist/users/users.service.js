@@ -49,7 +49,6 @@ let UsersService = class UsersService {
             return userWithoutPassword;
         });
     }
-    // 👇 MÉTODO NOVO ADICIONADO PARA O LOGIN 👇
     // É ele que garante que ao logar, o seu nome e foto venham junto no pacote!
     async findByEmail(email) {
         return this.prisma.user.findUnique({
@@ -57,7 +56,6 @@ let UsersService = class UsersService {
             include: { profile: true },
         });
     }
-    // --- MÉTODOS EXISTENTES ---
     async getProfile(userId) {
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
@@ -74,9 +72,7 @@ let UsersService = class UsersService {
         const updatedUser = await this.prisma.user.update({
             where: { id: userId },
             data: {
-                // Atualiza campos de User (se fornecidos)
                 ...(phone && { phone }),
-                // Atualiza campos de UserProfile (se fornecidos)
                 profile: {
                     update: {
                         ...(full_name && { full_name }),
@@ -89,6 +85,39 @@ let UsersService = class UsersService {
         });
         const { password_hash, ...userWithoutPassword } = updatedUser;
         return userWithoutPassword;
+    }
+    // 👇 MÉTODO ADICIONADO PARA EXCLUIR A CONTA 👇
+    async deleteUser(userId) {
+        try {
+            // Usamos uma transação para garantir que tudo seja apagado junto
+            await this.prisma.$transaction(async (tx) => {
+                // 1. Apaga todas as transações do usuário
+                await tx.transaction.deleteMany({
+                    where: { user_id: userId },
+                });
+                // 2. Apaga todas as contas (bancos) do usuário
+                await tx.account.deleteMany({
+                    where: { user_id: userId },
+                });
+                // 3. Apaga as tags customizadas
+                await tx.tag.deleteMany({
+                    where: { user_id: userId },
+                });
+                // 4. Apaga o perfil (se não tiver cascade)
+                await tx.userProfile.deleteMany({
+                    where: { user_id: userId },
+                });
+                // 5. Por fim, apaga o próprio usuário
+                await tx.user.delete({
+                    where: { id: userId },
+                });
+            });
+            return { message: "Conta excluída permanentemente." };
+        }
+        catch (error) {
+            console.error("Erro ao deletar usuário:", error);
+            throw new common_1.InternalServerErrorException("Não foi possível excluir a conta. Tente novamente.");
+        }
     }
 };
 exports.UsersService = UsersService;

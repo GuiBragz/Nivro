@@ -1,5 +1,37 @@
-node_modules
-# Keep environment variables out of version control
-.env
+# Dependências
+node_modules/
+.pnp
+.pnp.js
 
+# Meio Ambiente (Segurança)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Prisma
 /generated/prisma
+/prisma/migrations
+
+# Builds e Saídas
+dist/
+build/
+bin/
+obj/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Sistema Operacional e Editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

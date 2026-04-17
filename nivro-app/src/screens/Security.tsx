@@ -7,28 +7,24 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  ScrollView, // 👈 Importante para rolar a tela
+  ScrollView,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 import { api } from "../api/api";
+import { useAuth } from "../contexts/AuthContext";
 
 export function Security() {
   const navigation = useNavigation<any>();
+  const { signOut } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
 
   // Senhas
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-
-  // Estado Fake do Open Finance
-  const [openFinanceBanks, setOpenFinanceBanks] = useState([
-    { id: "1", name: "Nubank", connected: true },
-    { id: "2", name: "Itaú", connected: false },
-    { id: "3", name: "Banco Inter", connected: true },
-  ]);
 
   async function handleUpdatePassword() {
     if (!currentPassword || !newPassword || !confirmPassword) {
@@ -52,6 +48,7 @@ export function Security() {
       });
 
       Alert.alert("Sucesso", "Sua senha foi atualizada com segurança.");
+      setShowPasswordForm(false);
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
@@ -65,49 +62,11 @@ export function Security() {
     }
   }
 
-  function handleToggleOpenFinance(
-    bankId: string,
-    bankName: string,
-    isConnected: boolean,
-  ) {
-    if (isConnected) {
-      Alert.alert(
-        "Cancelar Integração",
-        `Deseja parar de sincronizar seus dados do ${bankName}?`,
-        [
-          { text: "Não", style: "cancel" },
-          {
-            text: "Sim, parar",
-            style: "destructive",
-            onPress: () => {
-              setOpenFinanceBanks((prev) =>
-                prev.map((b) =>
-                  b.id === bankId ? { ...b, connected: false } : b,
-                ),
-              );
-            },
-          },
-        ],
-      );
-    } else {
-      Alert.alert(
-        "Conectar Banco",
-        `Você será redirecionado para autorizar a conexão com o ${bankName}.`,
-        [
-          { text: "Cancelar", style: "cancel" },
-          {
-            text: "Continuar",
-            onPress: () => {
-              setOpenFinanceBanks((prev) =>
-                prev.map((b) =>
-                  b.id === bankId ? { ...b, connected: true } : b,
-                ),
-              );
-            },
-          },
-        ],
-      );
-    }
+  function handleOpenFinance() {
+    Alert.alert(
+      "Open Finance",
+      "Estamos finalizando a integração com o Banco Central para você sincronizar todas as suas contas automaticamente. Fique de olho na próxima atualização!",
+    );
   }
 
   function handleDeleteData() {
@@ -119,7 +78,22 @@ export function Security() {
         {
           text: "Limpar Tudo",
           style: "destructive",
-          onPress: () => console.log("Limpando dados..."),
+          onPress: async () => {
+            try {
+              // 👇 Chamada ativada! Certifique-se de que essa rota existe no NestJS
+              await api.delete("/transactions/clear-all");
+
+              Alert.alert("Feito", "Seu histórico foi apagado.");
+              navigation.navigate("Home");
+            } catch (error: any) {
+              console.error("Erro ao limpar dados:", error);
+              Alert.alert(
+                "Erro",
+                error.response?.data?.message ||
+                  "Falha ao limpar o histórico. Verifique o Back-end.",
+              );
+            }
+          },
         },
       ],
     );
@@ -134,7 +108,22 @@ export function Security() {
         {
           text: "Excluir permanentemente",
           style: "destructive",
-          onPress: () => console.log("Deletando conta..."),
+          onPress: async () => {
+            try {
+              // 👇 Chamada ativada! Rota para deletar o próprio usuário
+              await api.delete("/users/me");
+
+              Alert.alert("Adeus", "Sua conta foi excluída com sucesso.");
+              signOut(); // Desloga e volta pro login
+            } catch (error: any) {
+              console.error("Erro ao excluir conta:", error);
+              Alert.alert(
+                "Erro",
+                error.response?.data?.message ||
+                  "Falha ao excluir a conta. Verifique o Back-end.",
+              );
+            }
+          },
         },
       ],
     );
@@ -158,130 +147,124 @@ export function Security() {
       </View>
 
       <View style={styles.form}>
-        {/* --- SEÇÃO DE SENHA --- */}
-        <Text style={styles.sectionTitle}>ALTERAR SENHA</Text>
-        <View style={styles.card}>
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>SENHA ATUAL</Text>
-            <TextInput
-              style={styles.input}
-              secureTextEntry
-              value={currentPassword}
-              onChangeText={setCurrentPassword}
-              placeholderTextColor="rgba(232,237,245,0.3)"
-            />
+        {/* --- SEÇÃO DE ACESSO --- */}
+        <Text style={styles.sectionTitle}>ACESSO AO APP</Text>
+
+        <TouchableOpacity
+          style={styles.menuItemBtn}
+          onPress={() => setShowPasswordForm(!showPasswordForm)}
+        >
+          <View style={styles.iconBox}>
+            <Feather name="key" size={20} color="#E8EDF5" />
           </View>
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>NOVA SENHA</Text>
-            <TextInput
-              style={styles.input}
-              secureTextEntry
-              value={newPassword}
-              onChangeText={setNewPassword}
-              placeholderTextColor="rgba(232,237,245,0.3)"
-            />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.menuItemText}>Alterar Senha</Text>
+            <Text style={styles.menuItemDesc}>
+              Atualize sua senha de acesso
+            </Text>
           </View>
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>CONFIRMAR NOVA SENHA</Text>
-            <TextInput
-              style={styles.input}
-              secureTextEntry
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              placeholderTextColor="rgba(232,237,245,0.3)"
-            />
-          </View>
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={handleUpdatePassword}
-            disabled={loading}
-          >
-            <LinearGradient
-              colors={["#3B82F6", "#2563EB"]}
-              style={styles.saveBtn}
+          <Feather
+            name={showPasswordForm ? "chevron-up" : "chevron-down"}
+            size={20}
+            color="rgba(232,237,245,0.3)"
+          />
+        </TouchableOpacity>
+
+        {showPasswordForm && (
+          <View style={styles.card}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>SENHA ATUAL</Text>
+              <TextInput
+                style={styles.input}
+                secureTextEntry
+                value={currentPassword}
+                onChangeText={setCurrentPassword}
+                placeholderTextColor="rgba(232,237,245,0.3)"
+              />
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>NOVA SENHA</Text>
+              <TextInput
+                style={styles.input}
+                secureTextEntry
+                value={newPassword}
+                onChangeText={setNewPassword}
+                placeholderTextColor="rgba(232,237,245,0.3)"
+              />
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>CONFIRMAR NOVA SENHA</Text>
+              <TextInput
+                style={styles.input}
+                secureTextEntry
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                placeholderTextColor="rgba(232,237,245,0.3)"
+              />
+            </View>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handleUpdatePassword}
+              disabled={loading}
             >
-              {loading ? (
-                <ActivityIndicator color="#FFF" />
-              ) : (
-                <Text style={styles.saveBtnText}>Atualizar Senha</Text>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
+              <LinearGradient
+                colors={["#3B82F6", "#2563EB"]}
+                style={styles.saveBtn}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#FFF" />
+                ) : (
+                  <Text style={styles.saveBtnText}>Atualizar Senha</Text>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* --- SEÇÃO OPEN FINANCE --- */}
-        <Text style={[styles.sectionTitle, { marginTop: 32 }]}>
-          OPEN FINANCE
-        </Text>
-        <Text style={styles.sectionSubtitle}>
-          Gerencie os bancos sincronizados com o Nivro.
-        </Text>
-        <View style={styles.card}>
-          {openFinanceBanks.map((bank, index) => (
-            <View
-              key={bank.id}
-              style={[
-                styles.bankRow,
-                index !== openFinanceBanks.length - 1 && styles.borderBottom,
-              ]}
-            >
-              <View style={styles.bankIcon}>
-                <Feather
-                  name="briefcase"
-                  size={18}
-                  color="rgba(232,237,245,0.7)"
-                />
-              </View>
-              <View style={styles.bankInfo}>
-                <Text style={styles.bankName}>{bank.name}</Text>
-                <Text style={styles.bankStatus}>
-                  {bank.connected ? "Sincronizado" : "Não conectado"}
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={[
-                  styles.bankBtn,
-                  bank.connected ? styles.bankBtnCancel : styles.bankBtnConnect,
-                ]}
-                onPress={() =>
-                  handleToggleOpenFinance(bank.id, bank.name, bank.connected)
-                }
-              >
-                <Text
-                  style={[
-                    styles.bankBtnText,
-                    bank.connected
-                      ? { color: "#F75A68" }
-                      : { color: "#00B37E" },
-                  ]}
-                >
-                  {bank.connected ? "Cancelar" : "Conectar"}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          ))}
-        </View>
+        <Text style={[styles.sectionTitle, { marginTop: 32 }]}>CONEXÕES</Text>
+
+        <TouchableOpacity
+          style={styles.menuItemBtn}
+          onPress={handleOpenFinance}
+        >
+          <View
+            style={[
+              styles.iconBox,
+              { backgroundColor: "rgba(59,130,246,0.15)" },
+            ]}
+          >
+            <Feather name="link" size={20} color="#3B82F6" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.menuItemText}>Open Finance</Text>
+            <Text style={styles.menuItemDesc}>
+              Sincronizar contas bancárias
+            </Text>
+          </View>
+          <View style={styles.soonBadge}>
+            <Text style={styles.soonText}>EM BREVE</Text>
+          </View>
+        </TouchableOpacity>
 
         {/* --- SEÇÃO DANGER ZONE --- */}
         <Text
-          style={[styles.sectionTitle, { marginTop: 32, color: "#F75A68" }]}
+          style={[
+            styles.sectionTitle,
+            { marginTop: 32, color: "rgba(247,90,104,0.7)" },
+          ]}
         >
           ZONA DE PERIGO
         </Text>
 
         <TouchableOpacity style={styles.dangerBtn} onPress={handleDeleteData}>
           <View style={styles.dangerIconBox}>
-            <Feather name="trash" size={20} color="#E8EDF5" />
+            <Feather name="trash-2" size={20} color="#E8EDF5" />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.dangerBtnTitle}>Limpar Histórico</Text>
-            <Text style={styles.dangerBtnSub}>Apaga transações e contas</Text>
+            <Text style={styles.dangerBtnSub}>Apaga todas as transações</Text>
           </View>
-          <Feather
-            name="chevron-right"
-            size={20}
-            color="rgba(232,237,245,0.3)"
-          />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -294,7 +277,7 @@ export function Security() {
               { backgroundColor: "rgba(247,90,104,0.1)" },
             ]}
           >
-            <Feather name="alert-triangle" size={20} color="#F75A68" />
+            <Feather name="x-octagon" size={20} color="#F75A68" />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.dangerBtnTitle, { color: "#F75A68" }]}>
@@ -304,11 +287,6 @@ export function Security() {
               Ação permanente e irreversível
             </Text>
           </View>
-          <Feather
-            name="chevron-right"
-            size={20}
-            color="rgba(247,90,104,0.3)"
-          />
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -338,102 +316,93 @@ const styles = StyleSheet.create({
 
   sectionTitle: {
     fontSize: 11,
-    color: "rgba(232,237,245,0.4)",
+    color: "rgba(232,237,245,0.3)",
     fontFamily: "DMSans_700Bold",
     letterSpacing: 1.5,
-    marginBottom: 12,
-    marginLeft: 8,
-  },
-  sectionSubtitle: {
-    fontSize: 13,
-    color: "rgba(232,237,245,0.55)",
-    fontFamily: "DMSans_400Regular",
     marginBottom: 16,
     marginLeft: 8,
   },
   card: {
-    backgroundColor: "rgba(19,24,32,0.95)",
-    borderRadius: 20,
-    padding: 20,
+    backgroundColor: "rgba(19,24,32,0.5)",
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 4,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.07)",
+    borderColor: "rgba(255,255,255,0.03)",
   },
 
-  inputGroup: { marginBottom: 20 },
+  inputGroup: { marginBottom: 16 },
   inputLabel: {
     fontSize: 12,
     color: "rgba(232,237,245,0.55)",
-    fontFamily: "DMSans_700Bold",
+    fontFamily: "DMSans_500Medium",
     marginBottom: 8,
   },
   input: {
-    height: 56,
-    backgroundColor: "#131820",
-    borderRadius: 14,
+    height: 48,
+    backgroundColor: "#080A0E",
+    borderRadius: 12,
     paddingHorizontal: 16,
     fontSize: 15,
     color: "#E8EDF5",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.04)",
+    borderColor: "rgba(255,255,255,0.1)",
     fontFamily: "DMSans_400Regular",
   },
   saveBtn: {
-    height: 56,
-    borderRadius: 16,
+    height: 48,
+    borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
+    marginTop: 8,
   },
-  saveBtnText: { color: "#FFF", fontSize: 16, fontFamily: "DMSans_700Bold" },
+  saveBtnText: { color: "#FFF", fontSize: 14, fontFamily: "DMSans_700Bold" },
 
-  bankRow: { flexDirection: "row", alignItems: "center", paddingVertical: 12 },
-  borderBottom: {
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.05)",
+  menuItemBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#131820",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.03)",
   },
-  bankIcon: {
+  iconBox: {
     width: 40,
     height: 40,
     borderRadius: 12,
     backgroundColor: "rgba(255,255,255,0.05)",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
+    marginRight: 16,
   },
-  bankInfo: { flex: 1 },
-  bankName: {
+  menuItemText: {
     fontSize: 15,
     color: "#E8EDF5",
-    fontFamily: "DMSans_700Bold",
+    fontFamily: "DMSans_500Medium",
     marginBottom: 2,
   },
-  bankStatus: {
+  menuItemDesc: {
     fontSize: 12,
-    color: "rgba(232,237,245,0.55)",
+    color: "rgba(232,237,245,0.4)",
     fontFamily: "DMSans_400Regular",
   },
-  bankBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+  soonBadge: {
+    backgroundColor: "rgba(59,130,246,0.15)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: 8,
-    borderWidth: 1,
   },
-  bankBtnConnect: {
-    backgroundColor: "rgba(0,179,126,0.1)",
-    borderColor: "rgba(0,179,126,0.2)",
-  },
-  bankBtnCancel: {
-    backgroundColor: "rgba(247,90,104,0.1)",
-    borderColor: "rgba(247,90,104,0.2)",
-  },
-  bankBtnText: { fontSize: 12, fontFamily: "DMSans_700Bold" },
+  soonText: { color: "#3B82F6", fontSize: 10, fontFamily: "DMSans_700Bold" },
 
   dangerBtn: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#131820",
+    backgroundColor: "rgba(247,90,104,0.02)",
     borderRadius: 16,
     padding: 16,
-    marginBottom: 12,
+    marginBottom: 8,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.03)",
   },

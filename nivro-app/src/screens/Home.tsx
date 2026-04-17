@@ -15,11 +15,15 @@ import { api } from "../api/api";
 import { useAuth } from "../contexts/AuthContext";
 
 export function Home() {
-  const { user, hideBalances } = useAuth(); // 👈 Puxando o estado global
+  // 👇 1. Puxando as notificações globais do cérebro
+  const { user, hideBalances, notifications } = useAuth();
   const [loading, setLoading] = useState(true);
   const [totalBalance, setTotalBalance] = useState(0);
   const [transactions, setTransactions] = useState<any[]>([]);
   const navigation = useNavigation<any>();
+
+  // 👇 2. Verificando se existe alguma mensagem não lida
+  const hasUnreadNotif = notifications?.some((n: any) => !n.read);
 
   async function loadHomeData() {
     try {
@@ -95,7 +99,8 @@ export function Home() {
             onPress={() => navigation.navigate("Notifications")}
           >
             <Feather name="bell" size={18} color="#E8EDF5" />
-            <View style={styles.notifDot} />
+            {/* 👇 3. Renderização Condicional da Bolinha Vermelha */}
+            {hasUnreadNotif && <View style={styles.notifDot} />}
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -120,7 +125,6 @@ export function Home() {
       >
         <Text style={styles.balLabel}>Saldo total</Text>
         <Text style={styles.balAmount}>
-          {/* 👇 Lógica de Máscara de Saldo */}
           {hideBalances
             ? "R$ •••••"
             : new Intl.NumberFormat("pt-BR", {
@@ -137,7 +141,6 @@ export function Home() {
         >
           {poupancaTotal >= 0 ? "▲" : "▼"}
           {poupancaTotal >= 0 ? " +" : " "}
-          {/* 👇 Lógica de Máscara de Saldo */}
           {hideBalances
             ? "•••••"
             : new Intl.NumberFormat("pt-BR", {
@@ -185,7 +188,6 @@ export function Home() {
             <Feather name="arrow-up" size={16} color="#00B37E" />
           </View>
           <Text style={[styles.statVal, { color: "#00B37E" }]}>
-            {/* 👇 Lógica de Máscara de Saldo */}
             {hideBalances
               ? "•••••"
               : new Intl.NumberFormat("pt-BR", {
@@ -205,7 +207,6 @@ export function Home() {
             <Feather name="arrow-down" size={16} color="#F75A68" />
           </View>
           <Text style={[styles.statVal, { color: "#F75A68" }]}>
-            {/* 👇 Lógica de Máscara de Saldo */}
             {hideBalances
               ? "•••••"
               : new Intl.NumberFormat("pt-BR", {
@@ -274,7 +275,6 @@ export function Home() {
                     ]}
                   >
                     {item.type === "INCOME" ? "+" : "-"}
-                    {/* 👇 Lógica de Máscara de Saldo */}
                     {hideBalances
                       ? "•••••"
                       : new Intl.NumberFormat("pt-BR", {
@@ -380,7 +380,6 @@ export function Home() {
             adjustsFontSizeToFit
           >
             {poupancaTotal > 0 ? "+" : ""}
-            {/* 👇 Lógica de Máscara de Saldo */}
             {hideBalances
               ? "•••••"
               : new Intl.NumberFormat("pt-BR", {

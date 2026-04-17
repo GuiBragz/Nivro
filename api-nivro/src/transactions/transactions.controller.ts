@@ -1,3 +1,4 @@
+import "multer";
 import {
   Controller,
   Post,
@@ -9,14 +10,22 @@ import {
   UseGuards,
   BadRequestException,
   Put,
+  UseInterceptors,
+  UploadedFile,
 } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
+import { FileInterceptor } from "@nestjs/platform-express";
 import { TransactionsService } from "./transactions.service";
 
 @UseGuards(AuthGuard("jwt"))
 @Controller("transactions")
 export class TransactionsController {
   constructor(private readonly transactionsService: TransactionsService) {}
+
+  @Delete("clear-all")
+  async clearAllHistory(@Req() req) {
+    return this.transactionsService.clearHistory(req.user.userId);
+  }
 
   @Delete(":id")
   async remove(@Param("id") id: string, @Req() req) {
@@ -52,8 +61,19 @@ export class TransactionsController {
       body.color_hex,
     );
   }
+
   @Put(":id")
   async update(@Param("id") id: string, @Req() req, @Body() dto: any) {
     return this.transactionsService.update(id, req.user.userId, dto);
+  }
+
+  @Post("import")
+  @UseInterceptors(FileInterceptor("file"))
+  async importExtrato(
+    @Req() req,
+    @Body("account_id") accountId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.transactionsService.importCsv(req.user.userId, accountId, file);
   }
 }

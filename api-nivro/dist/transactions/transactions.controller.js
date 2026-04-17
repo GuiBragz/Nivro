@@ -20,6 +20,10 @@ let TransactionsController = class TransactionsController {
     constructor(transactionsService) {
         this.transactionsService = transactionsService;
     }
+    // 👇 ROTA ADICIONADA: Precisa ficar acima do :id para o NestJS não confundir
+    async clearAllHistory(req) {
+        return this.transactionsService.clearHistory(req.user.userId);
+    }
     async remove(id, req) {
         return this.transactionsService.remove(id, req.user.userId);
     }
@@ -43,6 +47,13 @@ let TransactionsController = class TransactionsController {
     }
 };
 exports.TransactionsController = TransactionsController;
+__decorate([
+    (0, common_1.Delete)("clear-all"),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], TransactionsController.prototype, "clearAllHistory", null);
 __decorate([
     (0, common_1.Delete)(":id"),
     __param(0, (0, common_1.Param)("id")),

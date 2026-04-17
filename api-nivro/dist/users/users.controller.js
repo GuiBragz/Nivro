@@ -25,9 +25,8 @@ let UsersController = class UsersController {
     async register(createUserDto) {
         return this.usersService.create(createUserDto);
     }
-    // 👇 Rotas novas protegidas abaixo 👇
+    // 👇 Rotas protegidas abaixo 👇
     async getProfile(req) {
-        // O id vem de dentro do token JWT interceptado
         return this.usersService.getProfile(req.user.userId);
     }
     async updateProfile(req, updateProfileDto) {
@@ -35,6 +34,10 @@ let UsersController = class UsersController {
     }
     async getMe(req) {
         return this.usersService.getProfile(req.user.userId);
+    }
+    // 👇 ROTA ADICIONADA: Para o botão "Excluir Minha Conta" funcionar
+    async deleteAccount(req) {
+        return this.usersService.deleteUser(req.user.userId);
     }
 };
 exports.UsersController = UsersController;
@@ -47,8 +50,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "register", null);
 __decorate([
-    (0, common_1.UseGuards)((0, passport_1.AuthGuard)("jwt")) // Exige o Token!
-    ,
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)("jwt")),
     (0, common_1.Get)("profile"),
     __param(0, (0, common_1.Req)()),
     __metadata("design:type", Function),
@@ -56,8 +58,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "getProfile", null);
 __decorate([
-    (0, common_1.UseGuards)((0, passport_1.AuthGuard)("jwt")) // Exige o Token!
-    ,
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)("jwt")),
     (0, common_1.Put)("profile"),
     (0, common_1.UsePipes)(new common_1.ValidationPipe({ whitelist: true })),
     __param(0, (0, common_1.Req)()),
@@ -74,6 +75,14 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "getMe", null);
+__decorate([
+    (0, common_1.Delete)("me"),
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)("jwt")),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "deleteAccount", null);
 exports.UsersController = UsersController = __decorate([
     (0, common_1.Controller)("users"),
     __metadata("design:paramtypes", [users_service_1.UsersService])

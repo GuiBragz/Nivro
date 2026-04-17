@@ -16,6 +16,7 @@ import {
 } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
+import * as DocumentPicker from "expo-document-picker";
 import { api } from "../api/api";
 
 export function NewTransaction() {
@@ -27,8 +28,8 @@ export function NewTransaction() {
 
   const [loading, setLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
+  const [importing, setImporting] = useState(false);
 
-  // Estados do Formulário
   const [type, setType] = useState<"INCOME" | "EXPENSE">(
     editingTransaction?.type || "EXPENSE",
   );
@@ -39,19 +40,16 @@ export function NewTransaction() {
     editingTransaction?.amount?.toString() || "",
   );
 
-  // Estados de Categorias (Tags)
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState(
     editingTransaction?.tags?.[0]?.id || null,
   );
 
-  // 👇 NOVOS: Estados de Contas
   const [accounts, setAccounts] = useState<any[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState(
     editingTransaction?.account_id || null,
   );
 
-  // Carrega tanto as Contas quanto as Categorias ao mesmo tempo
   async function loadData() {
     try {
       setDataLoading(true);
@@ -64,7 +62,6 @@ export function NewTransaction() {
       setCategories(tagsResponse.data);
       setAccounts(accountsResponse.data);
 
-      // Auto-seleciona a primeira categoria se for uma transação nova
       if (
         !editingTransaction &&
         tagsResponse.data.length > 0 &&
@@ -73,7 +70,6 @@ export function NewTransaction() {
         setSelectedCategoryId(tagsResponse.data[0].id);
       }
 
-      // Auto-seleciona a primeira conta se for uma transação nova
       if (
         !editingTransaction &&
         accountsResponse.data.length > 0 &&
@@ -82,7 +78,7 @@ export function NewTransaction() {
         setSelectedAccountId(accountsResponse.data[0].id);
       }
     } catch (error) {
-      console.error("Erro ao carregar dados:", error);
+      console.error(error);
     } finally {
       setDataLoading(false);
     }
@@ -109,7 +105,7 @@ export function NewTransaction() {
         description,
         amount: Number(amount.replace(",", ".")),
         type,
-        account_id: selectedAccountId, // 👈 Agora usa a conta selecionada de verdade!
+        account_id: selectedAccountId,
         category_id: selectedCategoryId,
         executed_at: new Date().toISOString(),
       };
@@ -127,6 +123,55 @@ export function NewTransaction() {
       Alert.alert("Erro", "Não foi possível salvar.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleImportCsv() {
+    if (!selectedAccountId) {
+      return Alert.alert(
+        "Ops",
+        "Selecione uma conta bancária antes de importar o extrato.",
+      );
+    }
+
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ["text/csv", "application/vnd.ms-excel"],
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled) return;
+
+      const file = result.assets[0];
+      setImporting(true);
+
+      const formData = new FormData();
+      formData.append("account_id", selectedAccountId);
+      formData.append("file", {
+        uri: file.uri,
+        name: file.name,
+        type: file.mimeType || "text/csv",
+      } as any);
+
+      const response = await api.post("/transactions/import", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      Alert.alert(
+        "Sucesso!",
+        `${response.data.total_imported} transações importadas com sucesso.`,
+      );
+      navigation.goBack();
+    } catch (error: any) {
+      Alert.alert(
+        "Erro",
+        error.response?.data?.message ||
+          "Não foi possível processar o arquivo.",
+      );
+    } finally {
+      setImporting(false);
     }
   }
 
@@ -186,7 +231,6 @@ export function NewTransaction() {
           </TouchableOpacity>
         </View>
 
-        {/* 👇 NOVO: SELETOR DE CONTAS 👇 */}
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>CONTA BANCÁRIA</Text>
           {dataLoading ? (
@@ -327,7 +371,7 @@ export function NewTransaction() {
         <TouchableOpacity
           activeOpacity={0.8}
           onPress={handleSave}
-          disabled={loading || dataLoading}
+          disabled={loading || dataLoading || importing}
         >
           <LinearGradient
             colors={["#00B37E", "#00D496"]}
@@ -342,6 +386,23 @@ export function NewTransaction() {
             </Text>
           </LinearGradient>
         </TouchableOpacity>
+
+        {!editingTransaction && (
+          <TouchableOpacity
+            style={styles.importBtn}
+            onPress={handleImportCsv}
+            disabled={importing || loading || dataLoading}
+          >
+            {importing ? (
+              <ActivityIndicator color="#3B82F6" size="small" />
+            ) : (
+              <>
+                <Feather name="upload" size={18} color="#3B82F6" />
+                <Text style={styles.importBtnText}>Importar extrato CSV</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        )}
       </View>
     </ScrollView>
   );
@@ -444,4 +505,21 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   saveBtnText: { color: "#000", fontSize: 16, fontFamily: "DMSans_700Bold" },
+  importBtn: {
+    flexDirection: "row",
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: "rgba(59,130,246,0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(59,130,246,0.3)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 16,
+    gap: 8,
+  },
+  importBtnText: {
+    color: "#3B82F6",
+    fontSize: 16,
+    fontFamily: "DMSans_700Bold",
+  },
 });

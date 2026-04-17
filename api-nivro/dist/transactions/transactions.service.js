@@ -17,8 +17,6 @@ let TransactionsService = class TransactionsService {
         this.prisma = prisma;
     }
     async create(userId, data) {
-        // Pegamos o ID que vem do front-end. Mesmo que o front mande "category_id",
-        // nós sabemos que na verdade é o ID da nossa Tag.
         const { account_id, amount, type, category_id, description, executed_at } = data;
         return this.prisma.$transaction(async (tx) => {
             const account = await tx.account.findFirst({
@@ -26,7 +24,6 @@ let TransactionsService = class TransactionsService {
             });
             if (!account)
                 throw new common_1.BadRequestException("Conta não encontrada.");
-            // 1. Cria a transação e CONECTA a Tag usando a sintaxe N:N do Prisma
             const transaction = await tx.transaction.create({
                 data: {
                     description,
@@ -35,13 +32,10 @@ let TransactionsService = class TransactionsService {
                     user_id: userId,
                     account_id,
                     executed_at: new Date(executed_at),
-                    tags: category_id
-                        ? { connect: [{ id: category_id }] } // 👈 A mágica do N:N acontece aqui!
-                        : undefined,
+                    tags: category_id ? { connect: [{ id: category_id }] } : undefined,
                 },
-                include: { tags: true }, // Retorna as tags juntas para o Front-end
+                include: { tags: true },
             });
-            // 2. Atualiza o saldo
             const multiplier = type === "INCOME" ? 1 : -1;
             await tx.account.update({
                 where: { id: account_id },
@@ -57,7 +51,7 @@ let TransactionsService = class TransactionsService {
             orderBy: { executed_at: "desc" },
             include: {
                 account: { select: { institution_name: true, type: true } },
-                tags: true, // 👈 Traz as tags (com as cores) para a Home!
+                tags: true,
             },
         });
     }
@@ -82,6 +76,27 @@ let TransactionsService = class TransactionsService {
         await this.prisma.transaction.delete({ where: { id } });
         return { message: "Transação excluída e saldo revertido." };
     }
+    // 👇 NOVA FUNÇÃO ADICIONADA AQUI: Apaga as transações e zera os saldos
+    async clearHistory(userId) {
+        try {
+            // 1. Apaga todas as transações (o Prisma cuida das relações de N:N com as Tags)
+            const deletedTx = await this.prisma.transaction.deleteMany({
+                where: { user_id: userId },
+            });
+            // 2. Zera o saldo de todas as contas do usuário
+            await this.prisma.account.updateMany({
+                where: { user_id: userId },
+                data: { balance: 0 },
+            });
+            return {
+                message: "Histórico apagado com sucesso",
+                transactionsDeleted: deletedTx.count,
+            };
+        }
+        catch (error) {
+            throw new common_1.InternalServerErrorException("Erro ao limpar histórico.");
+        }
+    }
     // --- GERENCIAMENTO DE TAGS (CORES!) ---
     async getTags(userId) {
         return this.prisma.tag.findMany({
@@ -93,7 +108,7 @@ let TransactionsService = class TransactionsService {
         return this.prisma.tag.create({
             data: {
                 name,
-                color_hex: color_hex || "#00B37E", // Se não mandar cor, usa o verde Nivro
+                color_hex: color_hex || "#00B37E",
                 user_id: userId,
             },
         });
@@ -102,19 +117,16 @@ let TransactionsService = class TransactionsService {
     async update(id, userId, data) {
         const { account_id, amount, type, category_id, description, executed_at } = data;
         return this.prisma.$transaction(async (tx) => {
-            // 1. Busca a transação antiga
             const oldTx = await tx.transaction.findFirst({
                 where: { id, account: { user_id: userId } },
             });
             if (!oldTx)
                 throw new common_1.NotFoundException("Transação não encontrada.");
-            // 2. Desfaz o impacto da transação antiga no saldo
-            const oldMultiplier = oldTx.type === "INCOME" ? -1 : 1; // Inverte o sinal
+            const oldMultiplier = oldTx.type === "INCOME" ? -1 : 1;
             await tx.account.update({
                 where: { id: oldTx.account_id },
                 data: { balance: { increment: Number(oldTx.amount) * oldMultiplier } },
             });
-            // 3. Atualiza os dados da transação
             const updatedTx = await tx.transaction.update({
                 where: { id },
                 data: {
@@ -123,11 +135,9 @@ let TransactionsService = class TransactionsService {
                     type,
                     account_id,
                     executed_at: new Date(executed_at),
-                    // Substitui a tag antiga pela nova usando o 'set'
                     tags: category_id ? { set: [{ id: category_id }] } : { set: [] },
                 },
             });
-            // 4. Aplica o impacto da transação nova no saldo
             const newMultiplier = type === "INCOME" ? 1 : -1;
             await tx.account.update({
                 where: { id: account_id },
