@@ -17,6 +17,7 @@ import { Insights } from "../screens/Insights";
 import { Privacy } from "../screens/Privacy";
 import { Notifications } from "../screens/Notifications";
 import { HelpCenter } from "../screens/HelpCenter";
+import { LegalTerms } from "../screens/LegalTerms";
 
 const Tab = createBottomTabNavigator();
 
@@ -115,7 +116,6 @@ export function AppRoutes() {
         }}
       />
 
-      {/* 👇 A ABA DE INSIGHTS ENTROU AQUI NO LUGAR DE INVESTIMENTOS 👇 */}
       <Tab.Screen
         name="Insights"
         component={Insights}
@@ -140,7 +140,6 @@ export function AppRoutes() {
 
       {/* --- TELAS SECUNDÁRIAS (OCULTAS DO MENU) --- */}
 
-      {/* Investimentos foi movido pra cá. A tela existe, mas o botão dela não quebra o layout */}
       <Tab.Screen
         name="Investments"
         component={Investments}
@@ -212,6 +211,16 @@ export function AppRoutes() {
       <Tab.Screen
         name="HelpCenter"
         component={HelpCenter}
+        options={{
+          tabBarItemStyle: { display: "none" },
+          tabBarButton: () => null,
+          tabBarStyle: { display: "none" },
+        }}
+      />
+
+      <Tab.Screen
+        name="LegalTerms"
+        component={LegalTerms}
         options={{
           tabBarItemStyle: { display: "none" },
           tabBarButton: () => null,

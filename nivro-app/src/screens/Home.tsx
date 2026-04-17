@@ -15,14 +15,12 @@ import { api } from "../api/api";
 import { useAuth } from "../contexts/AuthContext";
 
 export function Home() {
-  // 👇 1. Puxando as notificações globais do cérebro
   const { user, hideBalances, notifications } = useAuth();
   const [loading, setLoading] = useState(true);
   const [totalBalance, setTotalBalance] = useState(0);
   const [transactions, setTransactions] = useState<any[]>([]);
   const navigation = useNavigation<any>();
 
-  // 👇 2. Verificando se existe alguma mensagem não lida
   const hasUnreadNotif = notifications?.some((n: any) => !n.read);
 
   async function loadHomeData() {
@@ -72,7 +70,7 @@ export function Home() {
     "Usuário";
   const firstName = fullName.split(" ")[0];
   const userInitial = firstName.charAt(0).toUpperCase();
-  const avatarUrl = user?.profile?.avatar_url;
+  const avatarUrl = user?.profile?.avatar_url || user?.avatar_url;
 
   if (loading && transactions.length === 0) {
     return (
@@ -99,7 +97,6 @@ export function Home() {
             onPress={() => navigation.navigate("Notifications")}
           >
             <Feather name="bell" size={18} color="#E8EDF5" />
-            {/* 👇 3. Renderização Condicional da Bolinha Vermelha */}
             {hasUnreadNotif && <View style={styles.notifDot} />}
           </TouchableOpacity>
 
@@ -109,8 +106,9 @@ export function Home() {
           >
             {avatarUrl ? (
               <Image
-                source={{ uri: avatarUrl }}
+                source={{ uri: `${avatarUrl}?t=${new Date().getTime()}` }}
                 style={{ width: "100%", height: "100%" }}
+                resizeMode="cover"
               />
             ) : (
               <Text style={styles.avatarText}>{userInitial}</Text>
@@ -411,7 +409,6 @@ export function Home() {
   );
 }
 
-// ... styles permanecem os mesmos
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#080A0E" },
   content: { paddingTop: 60 },

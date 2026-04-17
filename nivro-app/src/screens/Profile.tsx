@@ -20,7 +20,7 @@ export function Profile() {
     user?.profile?.full_name || user?.full_name || "Usuário Nivro";
   const firstName = fullName.split(" ")[0];
   const initial = firstName.charAt(0).toUpperCase();
-  const avatarUrl = user?.profile?.avatar_url;
+  const avatarUrl = user?.profile?.avatar_url || user?.avatar_url;
 
   function handleLogout() {
     Alert.alert("Sair", "Tem certeza que deseja sair da sua conta?", [
@@ -43,8 +43,9 @@ export function Profile() {
         <View style={styles.avatar}>
           {avatarUrl ? (
             <Image
-              source={{ uri: avatarUrl }}
+              source={{ uri: `${avatarUrl}?t=${new Date().getTime()}` }}
               style={{ width: "100%", height: "100%" }}
+              resizeMode="cover"
             />
           ) : (
             <Text style={styles.avatarText}>{initial}</Text>
@@ -129,7 +130,6 @@ export function Profile() {
       <View style={styles.menuGroup}>
         <Text style={styles.menuTitle}>SUPORTE</Text>
 
-        {/* 👇 AQUI: Botão com a navegação adicionada 👇 */}
         <TouchableOpacity
           style={styles.menuItem}
           onPress={() => navigation.navigate("HelpCenter")}
@@ -164,7 +164,6 @@ const styles = StyleSheet.create({
   content: { paddingTop: 60, paddingHorizontal: 24, paddingBottom: 40 },
   header: { marginBottom: 32 },
   title: { fontSize: 28, color: "#E8EDF5", fontFamily: "DMSans_700Bold" },
-
   userCard: {
     alignItems: "center",
     backgroundColor: "rgba(19,24,32,0.95)",
@@ -213,7 +212,6 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans_700Bold",
     textTransform: "uppercase",
   },
-
   menuGroup: { marginBottom: 24 },
   menuTitle: {
     fontSize: 11,
@@ -254,7 +252,6 @@ const styles = StyleSheet.create({
     color: "rgba(232,237,245,0.4)",
     fontFamily: "DMSans_400Regular",
   },
-
   logoutBtn: {
     flexDirection: "row",
     alignItems: "center",

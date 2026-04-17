@@ -12,10 +12,7 @@ import { useNavigation } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import * as LocalAuthentication from "expo-local-authentication";
 import * as SecureStore from "expo-secure-store";
-
-// 👇 CORREÇÃO 1: Importamos a versão "legacy" para funcionar no Expo 54
 import * as FileSystem from "expo-file-system/legacy";
-
 import { useAuth } from "../contexts/AuthContext";
 import { api } from "../api/api";
 
@@ -86,7 +83,6 @@ export function Privacy() {
 
       const fileUri = FileSystem.documentDirectory + "extrato_nivro.csv";
 
-      // 👇 CORREÇÃO 2: A chamada da função na versão Legacy com o tipo em string
       await FileSystem.writeAsStringAsync(fileUri, csvHeader + csvContent, {
         encoding: "utf8",
       });
@@ -195,9 +191,7 @@ export function Privacy() {
         <Text style={styles.sectionLabel}>LEGAL</Text>
         <TouchableOpacity
           style={styles.menuItemBtn}
-          onPress={() =>
-            Alert.alert("Em breve", "O texto será adicionado amanhã.")
-          }
+          onPress={() => navigation.navigate("LegalTerms")}
         >
           <View style={styles.iconBox}>
             <Feather name="file-text" size={20} color="#E8EDF5" />
@@ -214,7 +208,6 @@ export function Privacy() {
   );
 }
 
-// ... styles mantidos inalterados
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#080A0E" },
   content: { paddingTop: 60, paddingHorizontal: 24, paddingBottom: 40 },
