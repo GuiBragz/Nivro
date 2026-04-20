@@ -8,6 +8,7 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -18,7 +19,6 @@ export function Register() {
   const navigation = useNavigation<any>();
   const [loading, setLoading] = useState(false);
 
-  // Estados dos Campos
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [cpf, setCpf] = useState("");
@@ -26,78 +26,60 @@ export function Register() {
   const [birthDate, setBirthDate] = useState("");
   const [password, setPassword] = useState("");
 
-  // Estados dos Novos Controles (Olhinho e Checkbox)
   const [showPassword, setShowPassword] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
-  // --- MÁSCARAS AUTOMÁTICAS ---
-
   const handleCpfChange = (text: string) => {
-    let value = text.replace(/\D/g, ""); // Tira tudo que não é número
-    if (value.length > 11) value = value.slice(0, 11); // Limita a 11 números
-    value = value.replace(/(\d{3})(\d)/, "$1.$2"); // Coloca o primeiro ponto
-    value = value.replace(/(\d{3})(\d)/, "$1.$2"); // Coloca o segundo ponto
-    value = value.replace(/(\d{3})(\d{1,2})$/, "$1-$2"); // Coloca o traço
+    let value = text.replace(/\D/g, "");
+    if (value.length > 11) value = value.slice(0, 11);
+    value = value.replace(/(\d{3})(\d)/, "$1.$2");
+    value = value.replace(/(\d{3})(\d)/, "$1.$2");
+    value = value.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
     setCpf(value);
   };
 
   const handlePhoneChange = (text: string) => {
     let value = text.replace(/\D/g, "");
     if (value.length > 11) value = value.slice(0, 11);
-    value = value.replace(/^(\d{2})(\d)/g, "($1) $2"); // Coloca os parênteses
-    value = value.replace(/(\d{5})(\d)/, "$1-$2"); // Coloca o traço
+    value = value.replace(/^(\d{2})(\d)/g, "($1) $2");
+    value = value.replace(/(\d{5})(\d)/, "$1-$2");
     setPhone(value);
   };
 
   const handleDateChange = (text: string) => {
     let value = text.replace(/\D/g, "");
     if (value.length > 8) value = value.slice(0, 8);
-    value = value.replace(/(\d{2})(\d)/, "$1/$2"); // Coloca a primeira barra
-    value = value.replace(/(\d{2})(\d)/, "$1/$2"); // Coloca a segunda barra
+    value = value.replace(/(\d{2})(\d)/, "$1/$2");
+    value = value.replace(/(\d{2})(\d)/, "$1/$2");
     setBirthDate(value);
   };
 
-  // --- VALIDAÇÃO BLINDADA ---
   const validateForm = () => {
     if (!email || !password || !fullName || !cpf || !phone || !birthDate) {
       return "Preencha todos os campos obrigatórios.";
     }
 
-    // 1. Nome sem números
     if (/\d/.test(fullName)) {
       return "O nome não pode conter números.";
     }
 
-    // 2. Email válido (tem que ter @ e .com ou algo parecido)
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return "Insira um endereço de e-mail válido.";
     }
 
-    // 3. Tamanhos das máscaras
     if (cpf.length !== 14) return "Digite o CPF completo.";
     if (phone.length !== 15) return "Digite o telefone com DDD completo.";
     if (birthDate.length !== 10)
       return "A data deve estar no formato DD/MM/AAAA.";
-
-    // 4. Senha e Termos
     if (password.length < 6) return "A senha deve ter no mínimo 6 caracteres.";
     if (!agreedToTerms)
       return "Você precisa concordar com os Termos de Uso e Privacidade.";
 
-    return null; // Se passou por tudo, retorna null (sem erro)
+    return null;
   };
 
-  function showTerms() {
-    Alert.alert(
-      "Termos de Uso e Privacidade",
-      "Estes são os termos temporários do Nivro.\n\n1. Nós não roubamos seus dados.\n2. Você promete não usar a plataforma para lavagem de dinheiro.\n3. Seus dados estão criptografados e seguros.\n\n(Termo completo em desenvolvimento)",
-      [{ text: "Entendi", style: "default" }],
-    );
-  }
-
   async function handleRegister() {
-    // Roda a validação antes de sequer tentar falar com o Back-end
     const errorMessage = validateForm();
     if (errorMessage) {
       return Alert.alert("Atenção", errorMessage);
@@ -106,7 +88,6 @@ export function Register() {
     try {
       setLoading(true);
 
-      // O Back-end espera a data no formato AAAA-MM-DD. Vamos inverter o que o usuário digitou (DD/MM/AAAA)
       const [day, month, year] = birthDate.split("/");
       const formattedDate = `${year}-${month}-${day}`;
 
@@ -114,8 +95,8 @@ export function Register() {
         email: email.trim(),
         password,
         full_name: fullName.trim(),
-        cpf: cpf.replace(/\D/g, ""), // Manda só os números pro banco pra ficar limpo
-        phone: phone.replace(/\D/g, ""), // Manda só os números pro banco
+        cpf: cpf.replace(/\D/g, ""),
+        phone: phone.replace(/\D/g, ""),
         birth_date: formattedDate,
       });
 
@@ -143,12 +124,22 @@ export function Register() {
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backBtn}
-          onPress={() => navigation.navigate("login")}
-        >
-          <Feather name="arrow-left" size={24} color="#E8EDF5" />
-        </TouchableOpacity>
+        <View style={styles.topRow}>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() => navigation.navigate("login")}
+          >
+            <Feather name="arrow-left" size={24} color="#E8EDF5" />
+          </TouchableOpacity>
+          <View style={styles.logoContainer}>
+            <Image
+              source={require("../../assets/nivro.png")}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
+          </View>
+        </View>
+
         <Text style={styles.title}>Criar Conta</Text>
         <Text style={styles.subtitle}>Sua jornada financeira começa aqui.</Text>
       </View>
@@ -243,7 +234,6 @@ export function Register() {
           </View>
         </View>
 
-        {/* 👇 CHECKBOX DOS TERMOS DE USO 👇 */}
         <TouchableOpacity
           style={styles.termsContainer}
           activeOpacity={0.7}
@@ -258,7 +248,10 @@ export function Register() {
           </View>
           <Text style={styles.termsText}>
             Eu concordo com os{" "}
-            <Text style={styles.termsLink} onPress={showTerms}>
+            <Text
+              style={styles.termsLink}
+              onPress={() => navigation.navigate("LegalTerms")}
+            >
               Termos de Uso e Privacidade
             </Text>
           </Text>
@@ -274,7 +267,7 @@ export function Register() {
             style={styles.saveBtn}
           >
             {loading ? (
-              <ActivityIndicator color="#000" />
+              <ActivityIndicator color="#0D1017" />
             ) : (
               <Text style={styles.saveBtnText}>Finalizar Cadastro</Text>
             )}
@@ -298,6 +291,12 @@ export function Register() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0D1017" },
   header: { paddingHorizontal: 24, paddingTop: 60, paddingBottom: 10 },
+  topRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 20,
+  },
   backBtn: {
     width: 40,
     height: 40,
@@ -305,7 +304,16 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.05)",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 20,
+  },
+  logoContainer: {
+    width: 50,
+    height: 50,
+    justifyContent: "center",
+    alignItems: "flex-end",
+  },
+  logoImage: {
+    width: "100%",
+    height: "100%",
   },
   title: { color: "#E8EDF5", fontSize: 28, fontFamily: "DMSans_700Bold" },
   subtitle: {
@@ -333,8 +341,6 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.07)",
     fontFamily: "DMSans_400Regular",
   },
-
-  // Estilos da Senha
   passwordContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -352,8 +358,6 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans_400Regular",
   },
   eyeBtn: { padding: 16 },
-
-  // Estilos do Checkbox dos Termos
   termsContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -383,7 +387,6 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans_700Bold",
     textDecorationLine: "underline",
   },
-
   saveBtn: {
     height: 56,
     borderRadius: 16,

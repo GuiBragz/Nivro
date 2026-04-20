@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  Image,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
@@ -22,8 +23,14 @@ export function LegalTerms() {
         >
           <Feather name="arrow-left" size={24} color="#E8EDF5" />
         </TouchableOpacity>
-        <Text style={styles.title}>Legal e Privacidade</Text>
-        <View style={{ width: 40 }} />
+
+        <View style={styles.logoContainer}>
+          <Image
+            source={require("../../assets/nivro.png")}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
+        </View>
       </View>
 
       <View style={styles.tabContainer}>
@@ -136,7 +143,7 @@ export function LegalTerms() {
 
             <Text style={styles.sectionTitle}>2. O Serviço Nivro</Text>
             <Text style={styles.paragraph}>
-              O Nivro é uma ferramenta tecnológica de organização financeira
+              O Nivro é uma ferramenta tecnológica de organization financeira
               pessoal. Nosso objetivo é facilitar a categorização de gastos e o
               acompanhamento de orçamentos. O Nivro NÃO é uma instituição
               financeira, gestora de patrimônio ou corretora de valores.
@@ -187,11 +194,12 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    justifyContent: "center", // Centraliza a logo
     paddingHorizontal: 24,
     paddingTop: 60,
     paddingBottom: 20,
+    position: "relative", // Necessário para o posicionamento absoluto do botão
   },
   backBtn: {
     width: 40,
@@ -200,11 +208,20 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.05)",
     justifyContent: "center",
     alignItems: "center",
+    position: "absolute", // Fixa na esquerda
+    left: 24,
+    top: 60,
+    zIndex: 10, // Garante que fique acima
   },
-  title: {
-    color: "#E8EDF5",
-    fontSize: 18,
-    fontFamily: "DMSans_700Bold",
+  logoContainer: {
+    width: 100, // Ajuste conforme necessário
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  logoImage: {
+    width: "100%",
+    height: "100%",
   },
   tabContainer: {
     flexDirection: "row",

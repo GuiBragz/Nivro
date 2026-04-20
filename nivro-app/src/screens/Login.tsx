@@ -9,6 +9,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -47,7 +48,11 @@ export function Login() {
     >
       <View style={styles.header}>
         <View style={styles.logoContainer}>
-          <Feather name="bar-chart-2" size={40} color="#00B37E" />
+          <Image
+            source={require("../../assets/nivro.png")}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
         </View>
         <Text style={styles.title}>Nivro</Text>
         <Text style={styles.subtitle}>O controle financeiro na sua mão.</Text>
@@ -141,15 +146,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   logoContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 24,
-    backgroundColor: "rgba(0,179,126,0.1)",
+    width: 100,
+    height: 100,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "rgba(0,179,126,0.2)",
+  },
+  logoImage: {
+    width: "200%",
+    height: "200%",
+    padding: "20%",
   },
   title: {
     color: "#FFF",

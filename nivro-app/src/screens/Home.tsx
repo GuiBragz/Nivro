@@ -34,7 +34,7 @@ export function Home() {
       setTotalBalance(balanceRes.data.totalBalance);
       setTransactions(txRes.data);
     } catch (error) {
-      console.error("Erro ao carregar dados:", error);
+      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -87,9 +87,16 @@ export function Home() {
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.headerRow}>
-        <View>
-          <Text style={styles.greeting}>{greetingTime} 👋</Text>
-          <Text style={styles.greetingName}>{firstName}</Text>
+        <View style={styles.userInfoLeft}>
+          <Image
+            source={require("../../assets/nivro.png")}
+            style={styles.headerLogo}
+            resizeMode="contain"
+          />
+          <View>
+            <Text style={styles.greeting}>{greetingTime} 👋</Text>
+            <Text style={styles.greetingName}>{firstName}</Text>
+          </View>
         </View>
         <View style={styles.headerRight}>
           <TouchableOpacity
@@ -424,6 +431,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 24,
     paddingBottom: 8,
+  },
+  userInfoLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  headerLogo: {
+    width: 34,
+    height: 34,
   },
   greeting: {
     fontSize: 13,
