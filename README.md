@@ -1,94 +1,139 @@
-# 📱 Nivro — Controle Financeiro Inteligente
+# 📱 Nivro
 
-<p align="center">
-  Organize suas finanças, acompanhe seus investimentos e receba recomendações inteligentes através da Nivro AI.
-</p>
+Sistema de gestão financeira pessoal desenvolvido para auxiliar usuários no acompanhamento de receitas, despesas, investimentos e planejamento financeiro em um único ambiente.
 
 ---
 
-## 💡 O que é o Nivro?
+## Sobre o Projeto
 
-O Nivro é uma plataforma de gestão financeira pessoal desenvolvida para ajudar pessoas a assumirem o controle da própria vida financeira de forma simples, moderna e inteligente.
+O Nivro é uma aplicação voltada para organização financeira pessoal, permitindo que usuários registrem movimentações financeiras, acompanhem sua evolução patrimonial e obtenham uma visão clara da própria situação financeira através de dashboards e relatórios.
 
-Através de uma experiência intuitiva e do suporte da Nivro AI, os usuários podem acompanhar receitas, despesas, investimentos e receber insights personalizados para tomar decisões financeiras melhores.
-
----
-
-## 🚀 Principais Recursos
-
-### 💰 Controle Financeiro
-
-Gerencie receitas, despesas e saldos em um único lugar, com organização por categorias e histórico completo de movimentações.
-
-### 📊 Dashboard Inteligente
-
-Visualize sua situação financeira através de gráficos, indicadores e resumos que facilitam a compreensão dos seus hábitos financeiros.
-
-### 🤖 Nivro AI
-
-A assistente inteligente do aplicativo analisa seus dados financeiros e fornece:
-
-* Insights personalizados
-* Recomendações de economia
-* Sugestões de metas financeiras
-* Respostas para dúvidas financeiras
-* Identificação de padrões de gastos
-
-### 📈 Gestão de Investimentos
-
-Acompanhe sua evolução patrimonial, organize ativos e monitore o crescimento do seu patrimônio ao longo do tempo.
-
-### 📂 Importação de Extratos
-
-Importe movimentações através de arquivos CSV para agilizar o registro e a organização financeira.
+O projeto foi idealizado com foco em simplicidade, usabilidade e acesso rápido às informações mais relevantes para a tomada de decisões financeiras.
 
 ---
 
-## 🎯 Nossa Missão
+## Funcionalidades
 
-Acreditamos que educação financeira e tecnologia devem caminhar juntas.
+### Gestão Financeira
 
-O Nivro nasceu com o propósito de transformar números e relatórios complexos em informações simples, acessíveis e úteis para o dia a dia das pessoas.
+* Cadastro de receitas e despesas
+* Controle de contas e saldos
+* Organização por categorias
+* Histórico completo de movimentações
+* Edição e exclusão de registros
 
-Nosso objetivo é permitir que qualquer usuário consiga entender melhor suas finanças e tomar decisões mais inteligentes sem precisar ser especialista no assunto.
+### Dashboard
+
+* Indicadores financeiros
+* Resumo mensal de receitas e despesas
+* Gráficos de acompanhamento
+* Distribuição de gastos por categoria
+* Visão consolidada das finanças
+
+### Assistente Inteligente
+
+* Consulta de informações financeiras em linguagem natural
+* Análise de padrões de gastos
+* Geração de insights baseados nos dados cadastrados
+* Sugestões de organização financeira
+
+### Investimentos
+
+* Cadastro de ativos
+* Registro de aportes
+* Acompanhamento patrimonial
+* Histórico de evolução dos investimentos
+
+### Importação de Dados
+
+* Importação de extratos via CSV
+* Processamento automático de transações
+* Organização inicial dos registros importados
 
 ---
 
-## 🔒 Segurança
+## Objetivos
 
-A segurança dos dados é uma prioridade no desenvolvimento da plataforma.
+O Nivro tem como objetivo central fornecer ferramentas que auxiliem usuários a:
 
-O sistema utiliza mecanismos modernos de autenticação e proteção de informações para garantir uma experiência confiável aos usuários.
+* Organizar sua vida financeira;
+* Acompanhar receitas e despesas;
+* Monitorar investimentos;
+* Compreender hábitos de consumo;
+* Tomar decisões financeiras com base em dados.
 
 ---
 
-## 🛣️ Roadmap
+## Tecnologias Utilizadas
 
-### Em desenvolvimento
+### Aplicação Mobile
 
+* React Native
+* Expo
+* TypeScript
+
+### Backend
+
+* Node.js
+* NestJS
+* Prisma ORM
+
+### Banco de Dados
+
+* PostgreSQL
+* Supabase
+
+### Inteligência Artificial
+
+* OpenAI API
+* Groq SDK
+
+### Infraestrutura
+
+* Render
+* GitHub
+
+---
+
+## Status do Projeto
+
+O projeto encontra-se em desenvolvimento ativo.
+
+### Funcionalidades concluídas
+
+* Estrutura inicial da aplicação
 * Sistema de autenticação
-* Gestão de receitas e despesas
+* Modelagem de banco de dados
+* Base da API
+
+### Funcionalidades em desenvolvimento
+
 * Dashboard financeiro
-* Integração com IA
+* Controle de investimentos
+* Integração da assistente inteligente
+* Importação de extratos
 
-### Próximas funcionalidades
+---
 
-* Controle avançado de investimentos
-* Metas financeiras inteligentes
-* Planejamento financeiro automatizado
+## Roadmap
+
+### Versão 1.0
+
+* Gestão financeira completa
+* Dashboard financeiro
+* Assistente inteligente
+* Controle de investimentos
+
+### Futuras versões
+
 * Integração bancária
-* Versão Web
+* Planejamento financeiro avançado
+* Plataforma web
+* Compartilhamento de contas
+* Relatórios avançados
 
 ---
 
-## 📸 Preview
+## Desenvolvedor
 
-Em breve serão disponibilizadas capturas de tela e demonstrações da plataforma.
-
----
-
-## 👨‍💻 Sobre o Projeto
-
-O Nivro está em desenvolvimento contínuo e busca unir organização financeira, inteligência artificial e experiência do usuário em uma única plataforma.
-
-Acompanhe a evolução do projeto através deste repositório.
+Desenvolvido por Guilherme Braga como projeto de software voltado à gestão financeira pessoal.
